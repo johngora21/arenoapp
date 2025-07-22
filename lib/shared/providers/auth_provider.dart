@@ -46,8 +46,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   void _init() {
-    // Simulate a logged in user for demo
-    state = state.copyWith(user: DummyUser(displayName: 'Demo User', email: 'demo@areno.com'), userType: 'customer', isLoading: false);
+    // Do not simulate a logged in user by default
+    // state = state.copyWith(user: DummyUser(displayName: 'Demo User', email: 'demo@areno.com'), userType: 'customer', isLoading: false);
   }
 
   Future<void> signIn(String email, String password) async {

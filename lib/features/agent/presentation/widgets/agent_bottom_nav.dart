@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 
-class CustomerBottomNav extends StatelessWidget {
+class AgentBottomNav extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
 
-  const CustomerBottomNav({
+  const AgentBottomNav({
     Key? key,
     required this.currentIndex,
     required this.onTap,
@@ -20,18 +20,18 @@ class CustomerBottomNav extends StatelessWidget {
       unselectedItemColor: AppTheme.primaryDarkBlue,
       items: const [
         BottomNavigationBarItem(
-          icon: Icon(Icons.location_city),
-          label: 'Offices',
-          ),
-        BottomNavigationBarItem(
           icon: Icon(Icons.home),
           label: 'Home',
-          ),
+        ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.book_online),
-          label: 'Booking',
-          ),
-        ],
+          icon: Icon(Icons.list_alt),
+          label: 'Shipments',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.qr_code_scanner),
+          label: 'Create',
+        ),
+      ],
     );
   }
-}
+} 

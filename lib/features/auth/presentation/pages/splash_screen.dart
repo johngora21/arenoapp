@@ -8,6 +8,7 @@ import '../../../customer/presentation/pages/customer_home_screen.dart';
 import '../../../driver/presentation/pages/driver_home_screen.dart';
 import '../../../agent/presentation/pages/agent_home_screen.dart';
 import '../../../supervisor/presentation/pages/supervisor_home_screen.dart';
+import 'user_type_selection_screen.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -88,7 +89,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     } else {
       // User is not logged in
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
+        MaterialPageRoute(builder: (context) => const UserTypeSelectionScreen()),
       );
     }
   }

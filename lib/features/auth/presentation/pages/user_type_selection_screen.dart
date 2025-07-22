@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'signup_screen.dart';
+import '../../../customer/presentation/pages/customer_home_screen.dart';
+import '../../../driver/presentation/pages/driver_home_screen.dart';
+import '../../../agent/presentation/pages/agent_main_shell.dart';
+import '../../../agent/presentation/pages/agent_home_screen.dart';
+import '../../../supervisor/presentation/pages/supervisor_home_screen.dart';
 
 class UserTypeSelectionScreen extends StatelessWidget {
   const UserTypeSelectionScreen({super.key});
@@ -120,10 +125,25 @@ class UserTypeSelectionScreen extends StatelessWidget {
   ) {
     return GestureDetector(
       onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => SignupScreen(userType: userType),
-          ),
+        Widget target;
+        switch (userType) {
+          case 'customer':
+            target = const CustomerHomeScreen();
+            break;
+          case 'driver':
+            target = const DriverHomeScreen();
+            break;
+          case 'agent':
+            target = const AgentMainShell();
+            break;
+          case 'supervisor':
+            target = const SupervisorHomeScreen();
+            break;
+          default:
+            target = const CustomerHomeScreen();
+        }
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => target),
         );
       },
       child: Container(
@@ -156,9 +176,7 @@ class UserTypeSelectionScreen extends StatelessWidget {
                   size: 30,
                 ),
               ),
-              
               const SizedBox(height: 16),
-              
               Text(
                 title,
                 style: GoogleFonts.poppins(
@@ -167,20 +185,6 @@ class UserTypeSelectionScreen extends StatelessWidget {
                   color: AppTheme.slate900,
                 ),
                 textAlign: TextAlign.center,
-              ),
-              
-              const SizedBox(height: 8),
-              
-              Text(
-                description,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  color: AppTheme.slate600,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ],
           ),

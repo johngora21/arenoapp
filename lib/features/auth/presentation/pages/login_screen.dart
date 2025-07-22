@@ -25,39 +25,39 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         child: SafeArea(
           child: Center(
-            child: SingleChildScrollView(
+          child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Form(
                 key: _formKey,
-                child: Column(
+            child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+              children: [
                     // Logo
                     _arenoLogoContainer(),
-                    const SizedBox(height: 24),
+                const SizedBox(height: 24),
                     // Welcome
-                    Text(
-                      'Welcome Back',
-                      style: GoogleFonts.poppins(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.slate900,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Sign in to your Areno Express account',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        color: AppTheme.slate600,
-                      ),
-                    ),
+                Text(
+                  'Welcome Back',
+                  style: GoogleFonts.poppins(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.slate900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Sign in to your Areno Express account',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                    color: AppTheme.slate600,
+                  ),
+                ),
                     const SizedBox(height: 32),
                     // Email
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
                       style: Theme.of(context).textTheme.bodyLarge,
                       decoration: InputDecoration(
                         labelText: 'Email',
@@ -67,47 +67,47 @@ class _LoginScreenState extends State<LoginScreen> {
                         filled: true,
                         fillColor: Colors.white,
                         isDense: true,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
-                        }
-                        if (!value.contains('@')) {
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your email';
+                            }
+                            if (!value.contains('@')) {
                           return 'Enter a valid email';
-                        }
-                        return null;
-                      },
-                    ),
+                            }
+                            return null;
+                          },
+                        ),
                     const SizedBox(height: 16),
                     // Password
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: !_isPasswordVisible,
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: !_isPasswordVisible,
                       style: Theme.of(context).textTheme.bodyLarge,
-                      decoration: InputDecoration(
-                        labelText: 'Password',
+                          decoration: InputDecoration(
+                            labelText: 'Password',
                         labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w400, color: AppTheme.slate500),
                         prefixIcon: const Icon(Icons.lock, color: AppTheme.primaryOrange),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                         filled: true,
                         fillColor: Colors.white,
                         isDense: true,
-                        suffixIcon: IconButton(
+                            suffixIcon: IconButton(
                           icon: Icon(_isPasswordVisible ? Icons.visibility : Icons.visibility_off, color: AppTheme.slate400),
                           onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your password';
+                            }
+                            if (value.length < 6) {
+                              return 'Password must be at least 6 characters';
+                            }
+                            return null;
+                          },
                         ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
-                        }
-                        if (value.length < 6) {
-                          return 'Password must be at least 6 characters';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 24),
+                        const SizedBox(height: 24),
                     // Login button
                     SizedBox(
                       width: double.infinity,
@@ -118,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
                         ),
                         onPressed: _isLoading ? null : _onLogin,
-                        child: _isLoading
+                          child: _isLoading
                             ? const SizedBox(
                                 width: 24,
                                 height: 24,
@@ -138,14 +138,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           textStyle: Theme.of(context).textTheme.titleMedium,
                           backgroundColor: Colors.white,
-                        ),
+                                ),
                         onPressed: () {
                           // TODO: Implement Google sign-in logic
                         },
                         child: const Center(child: Text('Login with Google')),
-                      ),
+                        ),
                     ),
-                    const SizedBox(height: 16),
+                        const SizedBox(height: 16),
                     // Sign up link
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -160,8 +160,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                   ],
-                ),
-              ),
+                      ),
+                    ),
             ),
           ),
         ),

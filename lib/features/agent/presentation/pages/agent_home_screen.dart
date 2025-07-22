@@ -1,134 +1,102 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../widgets/agent_drawer.dart';
 
-class AgentHomeScreen extends ConsumerStatefulWidget {
-  const AgentHomeScreen({super.key});
+class AgentHomeScreen extends StatefulWidget {
+  const AgentHomeScreen({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<AgentHomeScreen> createState() => _AgentHomeScreenState();
+  State<AgentHomeScreen> createState() => _AgentHomeScreenState();
 }
 
-class _AgentHomeScreenState extends ConsumerState<AgentHomeScreen> {
+class _AgentHomeScreenState extends State<AgentHomeScreen> {
+  String selectedTab = 'Shipments';
+  String selectedTimeFrame = 'Today';
+  final List<String> timeFrames = ['Today', 'This Week', 'This Month'];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Agent Home'),
+        backgroundColor: AppTheme.primaryDarkBlue,
+        elevation: 0,
+      ),
+      drawer: AgentDrawer(),
       body: Container(
         decoration: const BoxDecoration(
           gradient: AppTheme.slateGradient,
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SingleChildScrollView(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppTheme.slate900,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          color: AppTheme.successGreen.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: selectedTab == 'Shipments' ? AppTheme.primaryDarkBlue : AppTheme.slate200,
+                          foregroundColor: selectedTab == 'Shipments' ? Colors.white : AppTheme.slate900,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          textStyle: Theme.of(context).textTheme.titleMedium,
                         ),
-                        child: const Icon(
-                          Icons.store,
-                          color: AppTheme.successGreen,
-                          size: 24,
-                        ),
+                        onPressed: () => setState(() => selectedTab = 'Shipments'),
+                        child: const Text('Shipments'),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Pickup & Dropoff Agent',
-                              style: GoogleFonts.poppins(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                            Text(
-                              'Manage packages and coordinate with drivers',
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: selectedTab == 'Payments' ? AppTheme.primaryOrange : AppTheme.slate200,
+                          foregroundColor: selectedTab == 'Payments' ? Colors.white : AppTheme.slate900,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          textStyle: Theme.of(context).textTheme.titleMedium,
                         ),
+                        onPressed: () => setState(() => selectedTab = 'Payments'),
+                        child: const Text('Payments'),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                
-                const SizedBox(height: 24),
-                
-                // Stats Card
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.slate900.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        'Today\'s Activity',
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.slate900,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          _buildStatItem('Received', '8', AppTheme.primaryBlue),
-                          _buildStatItem('Picked Up', '5', AppTheme.successGreen),
-                          _buildStatItem('Pending', '3', AppTheme.warningYellow),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                
-                const SizedBox(height: 24),
-                
-                // Quick Actions
-                Expanded(
-                  child: GridView.count(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 1.2,
-                    children: [
-                      _buildActionCard('Receive Package', Icons.inbox, AppTheme.primaryBlue),
-                      _buildActionCard('Coordinate Pickup', Icons.phone, AppTheme.successGreen),
-                      _buildActionCard('Inventory', Icons.inventory, AppTheme.primaryOrange),
-                      _buildActionCard('Reports', Icons.assessment, AppTheme.slate700),
-                    ],
-                  ),
-                ),
+                const SizedBox(height: 18),
+                // Remove the time frame dropdown from Payments section
+                if (selectedTab == 'Shipments') ...[
+                  Text('Shipment Analytics', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 16),
+                  _buildPairedCards([
+                    _modernStatCard(label: 'Today', value: '12', icon: Icons.today, color: AppTheme.primaryBlue, badge: 'Today', width: 220),
+                    _modernStatCard(label: 'Pending', value: '5', icon: Icons.pending_actions, color: AppTheme.primaryOrange, badge: 'Pending', width: 220),
+                    _modernStatCard(label: 'Delivered', value: '7', icon: Icons.check_circle, color: AppTheme.successGreen, badge: 'Delivered', width: 220),
+                    _modernStatCard(label: 'Returns', value: '1', icon: Icons.undo, color: AppTheme.slate700, badge: 'Returns', width: 220),
+                  ]),
+                  const SizedBox(height: 24),
+                  ..._buildNotificationList([
+                    'Shipment #PKG001 has arrived at Arusha branch.',
+                    'New shipment assigned: #PKG002.',
+                    'Customer confirmed delivery for #PKG001.',
+                  ]),
+                ] else ...[
+                  Text('Finance Analytics', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 16),
+                  _buildPairedCards([
+                    _modernStatCard(label: 'Owed', value: 'TZS 120,000', icon: Icons.account_balance_wallet, color: AppTheme.primaryBlue, badge: null, fixed: true, width: 220),
+                    _modernStatCard(label: 'Remit', value: 'TZS 80,000', icon: Icons.payments, color: AppTheme.primaryOrange, badge: null, fixed: true, width: 220),
+                    _modernStatCard(label: 'Earned', value: 'TZS 300,000', icon: Icons.trending_up, color: AppTheme.successGreen, badge: null, fixed: false, width: 220),
+                    _modernStatCard(label: 'Due', value: 'TZS 0', icon: Icons.warning, color: AppTheme.slate700, badge: null, fixed: false, width: 220),
+                  ]),
+                  const SizedBox(height: 24),
+                  ..._buildNotificationList([
+                    'Payment received for shipment #PKG001.',
+                    'Remit cash for #PKG002 by 5pm today.',
+                  ]),
+                ],
               ],
             ),
           ),
@@ -137,57 +105,121 @@ class _AgentHomeScreenState extends ConsumerState<AgentHomeScreen> {
     );
   }
 
-  Widget _buildStatItem(String label, String value, Color color) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: GoogleFonts.poppins(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: color,
-          ),
-        ),
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: AppTheme.slate600,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildActionCard(String title, IconData icon, Color color) {
+  // Update _modernStatCard to accept a width parameter
+  Widget _modernStatCard({
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color color,
+    String? badge,
+    bool fixed = false, // ignored, always expands
+    double width = 220,
+  }) {
     return Container(
+      width: width,
+      margin: const EdgeInsets.symmetric(horizontal: 2),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(20),
+        gradient: LinearGradient(
+          colors: [color.withOpacity(0.85), color.withOpacity(0.65)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.slate900.withOpacity(0.1),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
+            color: color.withOpacity(0.25),
+            blurRadius: 12,
+            offset: Offset(0, 6),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      child: Stack(
+        children: [
+          Positioned(
+            right: 10,
+            bottom: 10,
+            child: Icon(icon, size: 48, color: Colors.white.withOpacity(0.18)),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (badge != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(badge, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                  ),
+                const SizedBox(height: 18),
+                Text(value, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 2),
+                Text(label, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Update _buildPairedCards to allow horizontal scroll and fixed card width
+  Widget _buildPairedCards(List<Widget> cards) {
+    List<Widget> widgets = [];
+    for (int i = 0; i < cards.length; i += 2) {
+      widgets.add(
+        Row(
           children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.slate900,
+            cards[i],
+            if (i + 1 < cards.length) ...[
+              const SizedBox(width: 16),
+              cards[i + 1],
+            ]
+          ],
+        ),
+      );
+      if (i + 2 < cards.length) {
+        widgets.add(const SizedBox(height: 16));
+      }
+    }
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: widgets,
+      ),
+    );
+  }
+
+  List<Widget> _buildNotificationList(List<String> messages) {
+    return messages.map((msg) => _NotificationCard(message: msg)).toList();
+  }
+}
+
+class _NotificationCard extends StatelessWidget {
+  final String message;
+  const _NotificationCard({required this.message});
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 0,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        child: Row(
+          children: [
+            const Icon(Icons.info_outline, color: AppTheme.primaryOrange, size: 28),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                message,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.primaryDarkBlue, fontWeight: FontWeight.w600),
               ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),
