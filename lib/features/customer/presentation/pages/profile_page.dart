@@ -82,7 +82,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                 const SizedBox(height: 20),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryOrange,
+                    backgroundColor: AppTheme.successGreen,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   onPressed: () {
@@ -106,7 +106,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
-        backgroundColor: AppTheme.primaryDarkBlue,
+        backgroundColor: AppTheme.successGreen,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
@@ -129,7 +129,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                     child: CircleAvatar(
                       radius: 16,
                       backgroundColor: Colors.white,
-                      child: Icon(Icons.edit, size: 18, color: AppTheme.primaryOrange),
+                      child: Icon(Icons.edit, size: 18, color: AppTheme.successGreen),
                     ),
                   ),
                 ],
@@ -141,7 +141,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
               children: [
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: isEditingPersonal ? AppTheme.primaryDarkBlue : AppTheme.slate200),
+                    side: BorderSide(color: isEditingPersonal ? AppTheme.successGreen : AppTheme.slate200),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   onPressed: () => setState(() => isEditingPersonal = true),
@@ -150,14 +150,14 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                 const SizedBox(width: 12),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: !isEditingPersonal ? AppTheme.primaryDarkBlue : AppTheme.slate200,
+                    backgroundColor: !isEditingPersonal ? AppTheme.successGreen : AppTheme.slate200,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   ),
                   onPressed: () => setState(() => isEditingPersonal = false),
                   child: Text(
                     'View Profile',
                     style: TextStyle(
-                      color: isEditingPersonal ? AppTheme.primaryDarkBlue : Colors.white,
+                      color: isEditingPersonal ? AppTheme.successGreen : Colors.white,
                     ),
                   ),
                 ),
@@ -264,7 +264,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                         Expanded(
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryDarkBlue,
+                              backgroundColor: AppTheme.successGreen,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
                             onPressed: () {
@@ -295,7 +295,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                   ),
                   Switch(
                     value: hasBusiness,
-                    activeColor: AppTheme.primaryOrange,
+                    activeColor: AppTheme.successGreen,
                     onChanged: (val) => setState(() => hasBusiness = val),
                   ),
                 ],
@@ -342,7 +342,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                         children: [
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryDarkBlue,
+                              backgroundColor: AppTheme.successGreen,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
                             onPressed: () {},
@@ -350,7 +350,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                           ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryOrange,
+                              backgroundColor: AppTheme.successGreen,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
                             onPressed: () {},
@@ -367,14 +367,6 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
             // 5. General Actions
             Text('Account Actions', style: AppTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: AppTheme.slate900)),
             const SizedBox(height: 12),
-            Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: ListTile(
-                leading: Icon(Icons.lock, color: AppTheme.primaryOrange),
-                title: Text('Change Password'),
-                onTap: () {}, // TODO: Change password
-              ),
-            ),
           ],
         ),
       ),
@@ -474,7 +466,7 @@ class _BusinessRegistrationFormState extends State<BusinessRegistrationForm> {
           TextFormField(
             readOnly: true,
             decoration: _inputDecoration('Business Location', 'Tap to pick location').copyWith(
-              suffixIcon: Icon(Icons.location_on, color: AppTheme.primaryOrange),
+              suffixIcon: Icon(Icons.location_on, color: AppTheme.successGreen),
             ),
             controller: TextEditingController(text: businessLocation != null ? 'Lat: ${businessLocation!.latitude}, Lng: ${businessLocation!.longitude}' : ''),
             validator: (v) => businessLocation == null ? 'Pick location' : null,
@@ -511,7 +503,7 @@ class _BusinessRegistrationFormState extends State<BusinessRegistrationForm> {
           ),
           if (tinFileName != null)
             ListTile(
-              leading: const Icon(Icons.insert_drive_file, color: AppTheme.primaryOrange),
+              leading: const Icon(Icons.insert_drive_file, color: AppTheme.successGreen),
               title: Text(tinFileName!, overflow: TextOverflow.ellipsis),
               trailing: IconButton(
                 icon: const Icon(Icons.close),
@@ -534,7 +526,7 @@ class _BusinessRegistrationFormState extends State<BusinessRegistrationForm> {
           ),
           if (licenseFileName != null)
             ListTile(
-              leading: const Icon(Icons.insert_drive_file, color: AppTheme.primaryOrange),
+              leading: const Icon(Icons.insert_drive_file, color: AppTheme.successGreen),
               title: Text(licenseFileName!, overflow: TextOverflow.ellipsis),
               trailing: IconButton(
                 icon: const Icon(Icons.close),
@@ -546,7 +538,7 @@ class _BusinessRegistrationFormState extends State<BusinessRegistrationForm> {
           const SizedBox(height: 20),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryOrange,
+              backgroundColor: AppTheme.successGreen,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () {

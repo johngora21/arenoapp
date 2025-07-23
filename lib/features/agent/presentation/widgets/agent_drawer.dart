@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../pages/agent_profile_page.dart';
 
+import '../pages/agent_register_shipment_page.dart';
 import '../pages/agent_quotes_page.dart';
 
 // import other pages as needed
@@ -23,7 +24,7 @@ class AgentDrawer extends StatelessWidget {
           children: [
             Container(
               decoration: BoxDecoration(
-                color: AppTheme.primaryDarkBlue,
+                color: AppTheme.successGreen,
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(24),
                   bottomRight: Radius.circular(24),
@@ -34,7 +35,7 @@ class AgentDrawer extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: profileSize / 2,
-                    backgroundColor: AppTheme.primaryDarkBlue,
+                    backgroundColor: AppTheme.successGreen,
                     child: Icon(Icons.person, color: AppTheme.primaryOrange, size: profileSize / 2),
                   ),
                   const SizedBox(width: 12),
@@ -67,7 +68,7 @@ class AgentDrawer extends StatelessWidget {
               selectedTileColor: AppTheme.primaryOrange.withOpacity(0.08),
               selectedColor: AppTheme.primaryOrange,
               onTap: () {
-                Navigator.of(context).pushReplacement(
+                Navigator.of(context).push(
                   MaterialPageRoute(builder: (context) => const AgentQuotesPage()),
                 );
               },

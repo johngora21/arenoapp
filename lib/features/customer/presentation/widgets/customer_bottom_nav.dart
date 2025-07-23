@@ -16,8 +16,8 @@ class CustomerBottomNav extends StatelessWidget {
     return BottomNavigationBar(
       currentIndex: currentIndex,
       onTap: onTap,
-      selectedItemColor: AppTheme.primaryBlue,
-      unselectedItemColor: AppTheme.primaryDarkBlue,
+      selectedItemColor: AppTheme.successGreen,
+      unselectedItemColor: AppTheme.successGreen.withOpacity(0.5),
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.location_city),

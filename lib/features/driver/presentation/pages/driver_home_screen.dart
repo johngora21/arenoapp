@@ -11,6 +11,7 @@ import 'driver_profile_page.dart';
 import 'driver_payments_page.dart';
 import 'driver_shipments_page.dart';
 import 'driver_create_shipment_page.dart';
+import 'driver_quotes_page.dart';
 
 class DriverHomeScreen extends ConsumerStatefulWidget {
   const DriverHomeScreen({super.key});
@@ -129,18 +130,18 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> with Ticker
           // Overlay info banner and ride card at the bottom
           Align(
             alignment: Alignment.bottomCenter,
-            child: Padding(
+          child: Padding(
               padding: const EdgeInsets.only(left: 8, right: 8),
-              child: Column(
+            child: Column(
                 mainAxisSize: MainAxisSize.min,
-                children: [
+              children: [
                   // Assignment card for driver
                   Card(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     elevation: 4,
                     color: Colors.white,
                     child: Padding(
-                      padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(20),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -152,13 +153,13 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> with Ticker
                               },
                               child: Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                decoration: BoxDecoration(
+                  decoration: BoxDecoration(
                                   color: Colors.grey[100],
                                   borderRadius: BorderRadius.circular(8),
                                   border: Border.all(color: Colors.grey[300]!),
-                                ),
-                                child: Row(
-                                  children: [
+                  ),
+                  child: Row(
+                    children: [
                                     Icon(Icons.search, color: Colors.grey[600]),
                                     const SizedBox(width: 12),
                                     Text(
@@ -174,20 +175,20 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> with Ticker
                             ),
                           if (!isSearchExpanded) const SizedBox(height: 16),
                           Row(
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
                                   color: AppTheme.primaryBlue.withOpacity(0.12),
                                   borderRadius: BorderRadius.circular(8),
-                                ),
+                        ),
                                 padding: const EdgeInsets.all(8),
                                 child: Icon(Icons.local_shipping, color: AppTheme.primaryBlue, size: 32),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                                     Text(assignment['packageType'] as String, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: AppTheme.primaryDarkBlue)),
                                     const SizedBox(height: 2),
                                     Row(
@@ -275,8 +276,8 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> with Ticker
                                 color: AppTheme.slate900.withOpacity(0.1),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
-                              ),
-                            ],
+                            ),
+                          ],
                           ),
                           child: IconButton(
                             icon: const Icon(Icons.menu, color: AppTheme.successGreen, size: 24),
@@ -286,9 +287,9 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> with Ticker
                           ),
                         ),
                       ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
             ),
           ),
           // Full screen search overlay
@@ -316,8 +317,8 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> with Ticker
                     ],
                   ),
                   child: SafeArea(
-                    child: Column(
-                      children: [
+                  child: Column(
+                    children: [
                         // Cross icon for cancel at top right
                         Align(
                           alignment: Alignment.topRight,
@@ -340,13 +341,13 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> with Ticker
                               _LocationSearchField(
                                 hintText: 'Origin (Pickup Location)',
                                 icon: Icons.my_location,
-                              ),
-                              const SizedBox(height: 16),
+                      ),
+                      const SizedBox(height: 16),
                               // Dotted line connecting origin to destination
                               Container(
                                 margin: const EdgeInsets.symmetric(horizontal: 16),
                                 child: Row(
-                                  children: [
+                        children: [
                                     Expanded(
                                       child: Container(
                                         height: 1,
@@ -382,10 +383,10 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> with Ticker
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                      ),
+                    ],
+                  ),
+                ),
                               const SizedBox(height: 16),
                               _LocationSearchField(
                                 hintText: 'Destination (Drop-off Location)',
@@ -395,12 +396,12 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> with Ticker
                           ),
                         ),
                         // Location suggestions area
-                        Expanded(
+                Expanded(
                           child: Container(
                             color: Colors.grey[50],
                             child: ListView(
                               padding: const EdgeInsets.all(16),
-                              children: [
+                    children: [
                                 // Mock location suggestions
                                 _LocationSuggestionTile(
                                   title: 'Dar es Salaam Airport',
@@ -422,15 +423,15 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> with Ticker
                                   subtitle: 'Dodoma, Tanzania',
                                   icon: Icons.account_balance,
                                 ),
-                              ],
+                    ],
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
-              ),
+              ],
+            ),
+          ),
+        ),
+      ),
             ),
         ],
       ),
@@ -464,7 +465,7 @@ class _DriverDrawer extends StatelessWidget {
                         radius: 22,
                         backgroundColor: Colors.white,
                         child: Icon(Icons.person, color: AppTheme.successGreen, size: 28),
-                      ),
+          ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -474,9 +475,9 @@ class _DriverDrawer extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                           overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+          ),
+        ),
+      ],
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -499,7 +500,7 @@ class _DriverDrawer extends StatelessWidget {
                   MaterialPageRoute(builder: (context) => const DriverPaymentsPage()),
                 );
               },
-            ),
+      ),
             ListTile(
               leading: Icon(Icons.local_shipping, color: AppTheme.successGreen),
               title: const Text('Shipments'),
@@ -515,6 +516,15 @@ class _DriverDrawer extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (context) => const DriverCreateShipmentPage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.receipt_long, color: AppTheme.successGreen),
+              title: const Text('Quotes'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const DriverQuotesPage()),
                 );
               },
             ),

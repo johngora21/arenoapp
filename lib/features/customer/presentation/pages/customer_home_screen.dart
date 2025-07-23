@@ -35,7 +35,7 @@ class _CustomerHomeScreenState extends ConsumerState<CustomerHomeScreen> {
       drawer: AppDrawer(),
       appBar: AppBar(
         title: const Text('Areno Express'),
-        backgroundColor: AppTheme.primaryDarkBlue,
+        backgroundColor: AppTheme.successGreen,
         elevation: 0,
         actions: [
           IconButton(
@@ -242,7 +242,7 @@ class _BookingTabState extends State<_BookingTab> {
                 Center(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryBlue,
+                      backgroundColor: AppTheme.successGreen,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
                     ),
@@ -978,7 +978,7 @@ class _OfficesTabState extends State<_OfficesTab> {
                 children: [
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryBlue,
+                      backgroundColor: AppTheme.successGreen,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),

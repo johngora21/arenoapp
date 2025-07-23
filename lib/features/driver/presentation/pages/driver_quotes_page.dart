@@ -4,8 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../core/services/beem_sms_service.dart';
 
-class AgentQuotesPage extends StatelessWidget {
-  const AgentQuotesPage({super.key});
+class DriverQuotesPage extends StatelessWidget {
+  const DriverQuotesPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +15,7 @@ class AgentQuotesPage extends StatelessWidget {
     }
     final quotesStream = FirebaseFirestore.instance
         .collection('quotes')
-        .where('agentId', isEqualTo: user.uid)
+        .where('driverId', isEqualTo: user.uid)
         .snapshots();
     return Scaffold(
       appBar: AppBar(
@@ -53,7 +53,7 @@ class AgentQuotesPage extends StatelessWidget {
                       onTap: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (ctx) => AgentQuoteDetailsPage(quote: q),
+                            builder: (ctx) => DriverQuoteDetailsPage(quote: q),
                           ),
                         );
                       },
@@ -73,8 +73,8 @@ class AgentQuotesPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             Text('Customer: ${q['customer']}', style: Theme.of(context).textTheme.bodyMedium),
-                            Text('Service: ${q['serviceType']}', style: Theme.of(context).textTheme.bodyMedium),
-                            Text('Status: ${q['status']}', style: Theme.of(context).textTheme.bodySmall),
+                            Text('Item: ${q['item']}', style: Theme.of(context).textTheme.bodyMedium),
+                            Text('Details: ${q['details']}', style: Theme.of(context).textTheme.bodySmall),
                             const SizedBox(height: 12),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.end,
@@ -109,9 +109,9 @@ class AgentQuotesPage extends StatelessWidget {
   }
 }
 
-class AgentQuoteDetailsPage extends StatelessWidget {
+class DriverQuoteDetailsPage extends StatelessWidget {
   final Map<String, dynamic> quote;
-  const AgentQuoteDetailsPage({super.key, required this.quote});
+  const DriverQuoteDetailsPage({super.key, required this.quote});
 
   @override
   Widget build(BuildContext context) {
@@ -145,6 +145,7 @@ class AgentQuoteDetailsPage extends StatelessWidget {
                 ),
               );
               if (confirm == true) {
+                // TODO: Add Firestore delete logic here if needed
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Quote deleted.')),
@@ -171,7 +172,7 @@ class AgentQuoteDetailsPage extends StatelessWidget {
               context,
               title: 'Sender Information',
               children: [
-                _detailRow('Name', quote['sender'] ?? '-'),
+                _detailRow('Name', quote['sender'] ?? quote['senderName'] ?? '-'),
                 _detailRow('Phone', quote['senderPhone'] ?? '-'),
                 _detailRow('Email', quote['senderEmail'] ?? '-'),
               ],
@@ -180,7 +181,7 @@ class AgentQuoteDetailsPage extends StatelessWidget {
               context,
               title: 'Receiver Information',
               children: [
-                _detailRow('Name', quote['receiver'] ?? '-'),
+                _detailRow('Name', quote['receiver'] ?? quote['receiverName'] ?? '-'),
                 _detailRow('Phone', quote['receiverPhone'] ?? '-'),
                 _detailRow('Email', quote['receiverEmail'] ?? '-'),
               ],
@@ -196,7 +197,7 @@ class AgentQuoteDetailsPage extends StatelessWidget {
               context,
               title: 'Delivery Details',
               children: [
-                _detailRow('Delivery Address', quote['deliveryAddress'] ?? '-'),
+                _detailRow('Delivery Address', quote['destination'] ?? quote['deliveryAddress'] ?? '-'),
               ],
             ),
             if ((quote['businessName'] ?? '').isNotEmpty || (quote['businessType'] ?? '').isNotEmpty)
@@ -221,12 +222,12 @@ class AgentQuoteDetailsPage extends StatelessWidget {
                   _detailRow('Account Name', quote['accountName'] ?? '-'),
                 ],
               ),
-            if ((quote['instructions'] ?? '').isNotEmpty)
+            if ((quote['instructions'] ?? quote['notes'] ?? '').isNotEmpty)
               _sectionCard(
                 context,
                 title: 'Additional Instructions',
                 children: [
-                  _detailRow('Instructions', quote['instructions'] ?? '-'),
+                  _detailRow('Instructions', quote['instructions'] ?? quote['notes'] ?? '-'),
                 ],
               ),
             const SizedBox(height: 18),
@@ -239,19 +240,6 @@ class AgentQuoteDetailsPage extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 child: Text('No parcels in package', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.slate400)),
               ),
-            const SizedBox(height: 24),
-            Center(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.successGreen,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  textStyle: Theme.of(context).textTheme.titleMedium,
-                ),
-                onPressed: () {},
-                child: const Text('Mark as Paid'),
-              ),
-            ),
           ],
         ),
       ),

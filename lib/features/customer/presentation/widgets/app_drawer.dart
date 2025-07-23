@@ -68,7 +68,7 @@ class AppDrawer extends StatelessWidget {
           children: [
             Container(
               decoration: BoxDecoration(
-                color: AppTheme.primaryDarkBlue,
+                color: AppTheme.successGreen,
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(24),
                   bottomRight: Radius.circular(24),
@@ -85,7 +85,7 @@ class AppDrawer extends StatelessWidget {
                   children: [
                     CircleAvatar(
                       radius: profileSize / 2,
-                      backgroundColor: AppTheme.primaryDarkBlue,
+                      backgroundColor: AppTheme.successGreen,
                       child: Text(
                         userInitials,
                         style: TextStyle(

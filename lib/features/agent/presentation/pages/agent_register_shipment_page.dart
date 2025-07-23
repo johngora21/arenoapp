@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart' as flutter_map;
+import 'package:latlong2/latlong.dart' as latlng2;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/agent_drawer.dart';
@@ -15,15 +16,10 @@ class AgentRegisterShipmentPage extends StatefulWidget {
 }
 
 class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
-  // Only keep courier section
   String _courierType = '';
   final _formKey = GlobalKey<FormState>();
-
-  // Common controllers
   final _pickupController = TextEditingController();
   final _deliveryController = TextEditingController();
-
-  // Courier controllers
   final _senderNameController = TextEditingController();
   final _senderPhoneController = TextEditingController();
   final _senderEmailController = TextEditingController();
@@ -34,31 +30,18 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
   final _courierContactPersonController = TextEditingController();
   final _courierContactPhoneController = TextEditingController();
   final _courierContactEmailController = TextEditingController();
-
-  // For courier: list of parcels, each with name, description, files
-  List<_CourierParcel> _parcels = [
-    _CourierParcel(),
-  ];
-  // For locations, map from parcel index to LatLng
-  Map<int, LatLng?> _parcelPickupLocations = {};
-  Map<int, LatLng?> _parcelDeliveryLocations = {};
-  int? _selectedParcelForPickup;
-  int? _selectedParcelForDelivery;
-
-  LatLng? _pickupLatLng;
-  LatLng? _deliveryLatLng;
-  List<PlatformFile> _packageFiles = [];
+  latlng2.LatLng? _pickupLatLng;
+  latlng2.LatLng? _deliveryLatLng;
   final _packageNameController = TextEditingController();
   final _businessNameController = TextEditingController();
-
   final CollectionReference quotesRef = FirebaseFirestore.instance.collection('quotes');
   List<Map<String, dynamic>> myQuotes = [];
   Stream<QuerySnapshot>? quotesStream;
+  List<_PackageItem> _packageItems = [ _PackageItem() ];
 
   @override
   void initState() {
     super.initState();
-    // Listen to real-time updates for the current user's quotes
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       quotesStream = quotesRef.where('userId', isEqualTo: user.uid).snapshots();
@@ -78,13 +61,11 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
       );
       return;
     }
-    // Example: Only basic fields, expand as needed
     final data = {
       'userId': user.uid,
       'serviceType': 'courier',
       'status': 'pending',
       'createdAt': FieldValue.serverTimestamp(),
-      // Add more fields from the form as needed
     };
     await quotesRef.add(data);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -97,7 +78,7 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Register Shipment'),
-        backgroundColor: AppTheme.primaryDarkBlue,
+        backgroundColor: AppTheme.successGreen,
         elevation: 0,
       ),
       drawer: AgentDrawer(),
@@ -113,13 +94,12 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Removed the 'Register a Shipment (Courier Only)' title
                   ..._buildCourierSection(context),
                   const SizedBox(height: 24),
                   Center(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryOrange,
+                        backgroundColor: AppTheme.successGreen,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
                       ),
@@ -132,8 +112,8 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
                     Text('My Recent Quotes/Bookings:', style: Theme.of(context).textTheme.titleMedium),
                     ...myQuotes.map((q) => Card(
                       child: ListTile(
-                        title: Text('Type:  ${q['serviceType']}'),
-                        subtitle: Text('Status:  ${q['status']}'),
+                        title: Text('Type: ${q['serviceType']}'),
+                        subtitle: Text('Status: ${q['status']}'),
                       ),
                     )),
                   ],
@@ -149,15 +129,40 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
   List<Widget> _buildCourierSection(BuildContext context) {
     return [
       _sectionHeader('Service Type'),
-      _dropdownField(
-        value: _courierType,
-        items: const [
-          'Personal Items',
-          'Business Items',
-         
+      Row(
+        children: [
+          Expanded(
+            child: _dropdownField(
+              value: _courierType,
+              items: const [
+                'Personal Items',
+                'Business Items',
+              ],
+              hint: 'Select service type',
+              onChanged: (v) => setState(() => _courierType = v ?? ''),
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner, color: AppTheme.successGreen, size: 28),
+            tooltip: 'Scan Shipment',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Scan Shipment'),
+                  content: const Text('Simulate scanning a shipment barcode/QR to verify.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
-        hint: 'Select service type',
-        onChanged: (v) => setState(() => _courierType = v ?? ''),
       ),
       if (_courierType == 'Business Items')
         Padding(
@@ -180,6 +185,71 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
       _mapPickerButton(_deliveryLatLng, (latlng) => setState(() => _deliveryLatLng = latlng), label: 'Delivery'),
       _sectionHeader('Package Name'),
       _styledTextField(_packageNameController, 'Package Name', Icons.inventory, hint: 'e.g. Electronics Shipment'),
+      _sectionHeader('Items in Package'),
+      ..._packageItems.asMap().entries.map((entry) {
+        final idx = entry.key;
+        final item = entry.value;
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 6),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (_packageItems.length > 1)
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => setState(() => _packageItems.removeAt(idx)),
+                      ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _dropdownField(
+                        value: item.category,
+                        items: const [
+                          'Electronics', 'Fashion', 'Documents', 'Food', 'Medical', 'Other'
+                        ],
+                        hint: 'Category',
+                        onChanged: (v) => setState(() => item.category = v ?? ''),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: _styledTextField(item.nameController, 'Item Name', Icons.label),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _styledTextField(item.quantityController, 'Quantity', Icons.confirmation_number),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: _styledTextField(item.valueController, 'Value', Icons.attach_money),
+                    ),
+                  ],
+                ),
+                _itemImageUploadWidget(item, (file) => setState(() => item.image = file)),
+              ],
+            ),
+          ),
+        );
+      }),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: OutlinedButton.icon(
+          icon: const Icon(Icons.add, color: AppTheme.successGreen),
+          label: const Text('Add Item'),
+          onPressed: () => setState(() => _packageItems.add(_PackageItem())),
+        ),
+      ),
       _sectionHeader('Additional Description'),
       Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
@@ -199,6 +269,9 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
           ),
         ),
       ),
+      const SizedBox(height: 12),
+      _sectionHeader('Summary'),
+      _buildPackageSummary(),
     ];
   }
 
@@ -221,7 +294,7 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
           floatingLabelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: AppTheme.slate900),
           hintText: hint,
           hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w300, color: AppTheme.slate300),
-          prefixIcon: Icon(icon, color: AppTheme.primaryOrange),
+          prefixIcon: Icon(icon, color: AppTheme.successGreen),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           filled: true,
           fillColor: Colors.white,
@@ -250,22 +323,22 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
     );
   }
 
-  Widget _mapPickerButton(LatLng? value, ValueChanged<LatLng> onPicked, {required String label}) {
+  Widget _mapPickerButton(latlng2.LatLng? value, ValueChanged<latlng2.LatLng> onPicked, {required String label}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: OutlinedButton.icon(
-        icon: const Icon(Icons.location_on),
+        icon: const Icon(Icons.location_on, color: AppTheme.successGreen),
         label: Text(value == null
             ? 'Set $label Location'
             : '$label: ${value.latitude.toStringAsFixed(5)}, ${value.longitude.toStringAsFixed(5)}'),
         onPressed: () async {
-          final picked = await showModalBottomSheet<LatLng>(
+          final picked = await showModalBottomSheet<latlng2.LatLng>(
             context: context,
             isScrollControlled: true,
             builder: (ctx) => SizedBox(
               height: MediaQuery.of(context).size.height * 0.6,
-              child: _GoogleMapPicker(
-                initial: value ?? const LatLng(-6.7924, 39.2083),
+              child: _OpenStreetMapPicker(
+                initial: value ?? latlng2.LatLng(-6.7924, 39.2083),
                 label: label,
               ),
             ),
@@ -273,6 +346,70 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
           if (picked != null) onPicked(picked);
         },
       ),
+    );
+  }
+
+  Widget _itemImageUploadWidget(_PackageItem item, ValueChanged<PlatformFile?> onChanged) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          if (item.image != null)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Image.memory(
+                item.image!.bytes!,
+                width: 48,
+                height: 48,
+                fit: BoxFit.cover,
+              ),
+            ),
+          OutlinedButton.icon(
+            icon: const Icon(Icons.image, color: AppTheme.successGreen),
+            label: Text(item.image == null ? 'Upload Image' : 'Change Image'),
+            onPressed: () async {
+              final result = await FilePicker.platform.pickFiles(
+                type: FileType.image,
+                allowMultiple: false,
+              );
+              if (result != null && result.files.isNotEmpty) {
+                onChanged(result.files.first);
+              }
+            },
+          ),
+          if (item.image != null)
+            IconButton(
+              icon: const Icon(Icons.close, color: AppTheme.successGreen),
+              onPressed: () => onChanged(null),
+            ),
+        ],
+      ),
+    );
+  }
+
+  double _getTotalValue() {
+    double total = 0;
+    for (final item in _packageItems) {
+      final value = double.tryParse(item.valueController.text.trim()) ?? 0;
+      total += value;
+    }
+    return total;
+  }
+
+  Widget _buildPackageSummary() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Total Value: TZS ${_getTotalValue().toStringAsFixed(2)}', style: Theme.of(context).textTheme.bodyLarge),
+        const SizedBox(height: 6),
+        Text('Items:', style: Theme.of(context).textTheme.bodyMedium),
+        ..._packageItems.where((item) => item.nameController.text.isNotEmpty).map((item) =>
+          Padding(
+            padding: const EdgeInsets.only(left: 8, top: 2),
+            child: Text('- ${item.nameController.text} (${item.category}) x${item.quantityController.text}', style: Theme.of(context).textTheme.bodySmall),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -284,17 +421,24 @@ class _CourierParcel {
   List<PlatformFile> files = [];
 }
 
-class _GoogleMapPicker extends StatefulWidget {
-  final LatLng initial;
-  final String label;
-  const _GoogleMapPicker({required this.initial, required this.label});
-  @override
-  State<_GoogleMapPicker> createState() => _GoogleMapPickerState();
+class _PackageItem {
+  String category = '';
+  TextEditingController nameController = TextEditingController();
+  TextEditingController valueController = TextEditingController();
+  TextEditingController quantityController = TextEditingController();
+  PlatformFile? image;
 }
 
-class _GoogleMapPickerState extends State<_GoogleMapPicker> {
-  late LatLng _selected;
-  GoogleMapController? _controller;
+class _OpenStreetMapPicker extends StatefulWidget {
+  final latlng2.LatLng initial;
+  final String label;
+  const _OpenStreetMapPicker({required this.initial, required this.label});
+  @override
+  State<_OpenStreetMapPicker> createState() => _OpenStreetMapPickerState();
+}
+
+class _OpenStreetMapPickerState extends State<_OpenStreetMapPicker> {
+  late latlng2.LatLng _selected;
   @override
   void initState() {
     super.initState();
@@ -306,23 +450,31 @@ class _GoogleMapPickerState extends State<_GoogleMapPicker> {
       children: [
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Text('Select  {widget.label} Location', style: Theme.of(context).textTheme.titleMedium),
+          child: Text('Select ${widget.label} Location', style: Theme.of(context).textTheme.titleMedium),
         ),
         Expanded(
-          child: GoogleMap(
-            initialCameraPosition: CameraPosition(target: _selected, zoom: 15),
-            onMapCreated: (controller) => _controller = controller,
-            markers: {
-              Marker(
-                markerId: const MarkerId('selected'),
-                position: _selected,
-                draggable: true,
-                onDragEnd: (pos) => setState(() => _selected = pos),
+          child: flutter_map.FlutterMap(
+            options: flutter_map.MapOptions(
+              initialCenter: _selected,
+              initialZoom: 15,
+              onTap: (tapPos, latlng) => setState(() => _selected = latlng),
+            ),
+            children: [
+              flutter_map.TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.arenoapp',
               ),
-            },
-            onTap: (latlng) => setState(() => _selected = latlng),
-            myLocationButtonEnabled: true,
-            zoomControlsEnabled: true,
+              flutter_map.MarkerLayer(
+                markers: [
+                  flutter_map.Marker(
+                    width: 40,
+                    height: 40,
+                    point: _selected,
+                    child: const Icon(Icons.location_pin, color: Colors.red, size: 40),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
         Padding(

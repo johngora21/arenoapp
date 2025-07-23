@@ -1,193 +1,365 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../../../../core/services/beem_sms_service.dart';
 
 class QuotesPage extends StatelessWidget {
   const QuotesPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final quotes = [
-      {
-        'serviceType': 'Courier',
-        'date': '2024-06-01',
-        'destination': 'Dar es Salaam',
-        'packageName': 'Electronics',
-        'status': 'Pending',
-        'quotedPrice': 'TZS 120,000',
-      },
-      {
-        'serviceType': 'Freight',
-        'date': '2024-05-28',
-        'destination': 'Arusha',
-        'packageName': 'Furniture',
-        'status': 'Approved',
-        'quotedPrice': 'TZS 350,000',
-      },
-      {
-        'serviceType': 'Moving',
-        'date': '2024-05-25',
-        'destination': 'Mwanza',
-        'packageName': 'Household Items',
-        'status': 'Rejected',
-        'quotedPrice': 'TZS 500,000',
-      },
-    ];
-
-    Color statusColor(String status) {
-      switch (status) {
-        case 'Approved':
-          return Colors.green;
-        case 'Rejected':
-          return Colors.red;
-        case 'Pending':
-        default:
-          return AppTheme.primaryOrange;
-      }
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return const Center(child: Text('Not logged in'));
     }
-
+    final quotesStream = FirebaseFirestore.instance
+        .collection('quotes')
+        .where('userId', isEqualTo: user.uid)
+        .snapshots();
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Quotations'),
-        backgroundColor: AppTheme.primaryDarkBlue,
+        title: const Text('Pending Quotes'),
+        backgroundColor: AppTheme.successGreen,
+        foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: ListView.separated(
-          itemCount: quotes.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 18),
-          itemBuilder: (context, index) {
-            final quote = quotes[index];
-            return Card(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-              elevation: 8,
-              color: Colors.white,
-              shadowColor: AppTheme.primaryDarkBlue.withOpacity(0.08),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.request_quote, color: AppTheme.primaryOrange, size: 32),
-                        const SizedBox(width: 12),
-                        Text(
-                          quote['serviceType']!,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontFamily: 'Poppins',
-                            color: AppTheme.primaryDarkBlue,
-                            fontWeight: FontWeight.w700,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: AppTheme.slateGradient,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: StreamBuilder<QuerySnapshot>(
+            stream: quotesStream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return Center(child: Text('No pending quotes.', style: Theme.of(context).textTheme.bodyLarge));
+              }
+              final pendingQuotes = snapshot.data!.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+              return ListView.separated(
+                itemCount: pendingQuotes.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 16),
+                itemBuilder: (context, idx) {
+                  final q = pendingQuotes[idx];
+                  return Card(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 2,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (ctx) => _CustomerQuoteDetailsPage(quote: q),
                           ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryDarkBlue.withOpacity(0.13),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            quote['status']!,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.w600,
-                              color: statusColor(quote['status']!),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(18),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(Icons.pending_actions, color: AppTheme.successGreen),
+                                const SizedBox(width: 8),
+                                Text('Quote ID: ${q['quoteId']}', style: Theme.of(context).textTheme.bodyLarge),
+                                const Spacer(),
+                                Text(q['amount'], style: Theme.of(context).textTheme.titleMedium?.copyWith(color: AppTheme.successGreen)),
+                              ],
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        Icon(Icons.calendar_today, color: AppTheme.primaryDarkBlue, size: 18),
-                        const SizedBox(width: 6),
-                        Text(
-                          quote['date']!,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontFamily: 'Poppins',
-                            color: AppTheme.slate900,
-                          ),
-                        ),
-                        const SizedBox(width: 18),
-                        Icon(Icons.location_on, color: AppTheme.primaryOrange, size: 18),
-                        const SizedBox(width: 6),
-                        Text(
-                          quote['destination']!,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontFamily: 'Poppins',
-                            color: AppTheme.slate900,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.inventory_2_rounded, color: AppTheme.primaryDarkBlue, size: 18),
-                        const SizedBox(width: 6),
-                        Text(
-                          quote['packageName']!,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            fontFamily: 'Poppins',
-                            color: AppTheme.slate900,
-                          ),
-                        ),
-                        const Spacer(),
-                        Text(
-                          quote['quotedPrice']!,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontFamily: 'Poppins',
-                            color: AppTheme.primaryOrange,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        OutlinedButton.icon(
-                          icon: const Icon(Icons.edit, size: 18),
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(color: AppTheme.primaryDarkBlue),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            textStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontFamily: 'Poppins', fontWeight: FontWeight.w600,
+                            const SizedBox(height: 8),
+                            Text('Customer: ${q['customer']}', style: Theme.of(context).textTheme.bodyMedium),
+                            Text('Service: ${q['serviceType']}', style: Theme.of(context).textTheme.bodyMedium),
+                            Text('Status: ${q['status']}', style: Theme.of(context).textTheme.bodySmall),
+                            const SizedBox(height: 12),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.successGreen,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                  onPressed: () async {
+                                    final phone = q['receiverPhone'] ?? '';
+                                    final message = 'Your quote ${q['quoteId'] ?? ''} has been approved and is ready for payment.';
+                                    await BeemSmsService.sendSms(phone: phone, message: message);
+                                  },
+                                  child: const Text('Click to Pay'),
+                                ),
+                              ],
                             ),
-                          ),
-                          onPressed: () {},
-                          label: const Text('Edit'),
+                          ],
                         ),
-                        const SizedBox(width: 6),
-                        IconButton(
-                          icon: Icon(Icons.delete, color: AppTheme.errorRed),
-                          tooltip: 'Delete',
-                          onPressed: () {},
-                        ),
-                        const SizedBox(width: 10),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primaryOrange,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-                            textStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontFamily: 'Poppins', fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          onPressed: () {},
-                          child: const Text('Proceed'),
-                        ),
-                      ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CustomerQuoteDetailsPage extends StatelessWidget {
+  final Map<String, dynamic> quote;
+  const _CustomerQuoteDetailsPage({Key? key, required this.quote}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final List<dynamic> parcels = quote['items'] ?? [];
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Quote Details'),
+        backgroundColor: AppTheme.successGreen,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.white),
+            tooltip: 'Delete Quote',
+            onPressed: () async {
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Delete Quote'),
+                  content: const Text('Are you sure you want to delete this quote?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: const Text('Delete', style: TextStyle(color: Colors.red)),
                     ),
                   ],
                 ),
+              );
+              if (confirm == true) {
+                Navigator.of(context).pop();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Quote deleted.')),
+                );
+              }
+            },
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionCard(
+              context,
+              title: 'Service Type',
+              children: [
+                _detailRow('Type', quote['serviceType'] ?? 'Courier'),
+                _detailRow('Status', quote['status'] ?? '-', color: _statusColor(quote['status'] ?? '')),
+              ],
+            ),
+            _sectionCard(
+              context,
+              title: 'Sender Information',
+              children: [
+                _detailRow('Name', quote['sender'] ?? '-'),
+                _detailRow('Phone', quote['senderPhone'] ?? '-'),
+                _detailRow('Email', quote['senderEmail'] ?? '-'),
+              ],
+            ),
+            _sectionCard(
+              context,
+              title: 'Receiver Information',
+              children: [
+                _detailRow('Name', quote['receiver'] ?? '-'),
+                _detailRow('Phone', quote['receiverPhone'] ?? '-'),
+                _detailRow('Email', quote['receiverEmail'] ?? '-'),
+              ],
+            ),
+            _sectionCard(
+              context,
+              title: 'Pickup Details',
+              children: [
+                _detailRow('Pickup Address', quote['pickupAddress'] ?? '-'),
+              ],
+            ),
+            _sectionCard(
+              context,
+              title: 'Delivery Details',
+              children: [
+                _detailRow('Delivery Address', quote['deliveryAddress'] ?? '-'),
+              ],
+            ),
+            if ((quote['businessName'] ?? '').isNotEmpty || (quote['businessType'] ?? '').isNotEmpty)
+              _sectionCard(
+                context,
+                title: 'Business Info',
+                children: [
+                  _detailRow('Business Name', quote['businessName'] ?? '-'),
+                  _detailRow('Business Type', quote['businessType'] ?? '-'),
+                  _detailRow('Business Address', quote['businessAddress'] ?? '-'),
+                  _detailRow('Contact', quote['businessContact'] ?? '-'),
+                ],
               ),
-            );
-          },
+            if ((quote['paymentType'] ?? '').isNotEmpty || (quote['paymentProvider'] ?? '').isNotEmpty)
+              _sectionCard(
+                context,
+                title: 'Payment Info',
+                children: [
+                  _detailRow('Payment Type', quote['paymentType'] ?? '-'),
+                  _detailRow('Provider', quote['paymentProvider'] ?? '-'),
+                  _detailRow('Account Number', quote['accountNumber'] ?? '-'),
+                  _detailRow('Account Name', quote['accountName'] ?? '-'),
+                ],
+              ),
+            if ((quote['instructions'] ?? '').isNotEmpty)
+              _sectionCard(
+                context,
+                title: 'Additional Instructions',
+                children: [
+                  _detailRow('Instructions', quote['instructions'] ?? '-'),
+                ],
+              ),
+            const SizedBox(height: 18),
+            Text('Parcels in Package', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: AppTheme.successGreen)),
+            const SizedBox(height: 8),
+            if (parcels.isNotEmpty)
+              ...parcels.map((parcel) => _ParcelCard(parcel: parcel)).toList()
+            else
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text('No parcels in package', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.slate400)),
+              ),
+            const SizedBox(height: 24),
+            Center(
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.successGreen,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  textStyle: Theme.of(context).textTheme.titleMedium,
+                ),
+                onPressed: () {},
+                child: const Text('Click to Pay'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionCard(BuildContext context, {required String title, required List<Widget> children}) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      elevation: 3,
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: AppTheme.successGreen)),
+            const SizedBox(height: 8),
+            ...children,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detailRow(String label, String value, {Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(label, style: TextStyle(fontWeight: FontWeight.w500, color: AppTheme.slate500)),
+          ),
+          Expanded(
+            child: Text(value, style: TextStyle(fontWeight: FontWeight.w600, color: color ?? AppTheme.slate900)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _statusColor(String status) {
+    switch (status) {
+      case 'Delivered':
+        return AppTheme.successGreen;
+      case 'In Transit':
+        return AppTheme.primaryOrange;
+      case 'Pending Pickup':
+        return AppTheme.successGreen;
+      default:
+        return AppTheme.slate900;
+    }
+  }
+}
+
+class _ParcelCard extends StatelessWidget {
+  final Map<String, dynamic> parcel;
+  const _ParcelCard({required this.parcel});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      color: AppTheme.slate100,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (parcel['image'] != null)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.memory(
+                  parcel['image'],
+                  width: 60,
+                  height: 60,
+                  fit: BoxFit.cover,
+                ),
+              )
+            else
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: AppTheme.slate200,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.inventory, color: AppTheme.successGreen, size: 32),
+              ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(parcel['name'] ?? '', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                  Text('Category: ${parcel['category'] ?? ''}', style: Theme.of(context).textTheme.bodyMedium),
+                  if (parcel['description'] != null && parcel['description'].toString().isNotEmpty)
+                    Text('Description: ${parcel['description']}', style: Theme.of(context).textTheme.bodyMedium),
+                  Text('Quantity: ${parcel['quantity'] ?? ''}', style: Theme.of(context).textTheme.bodyMedium),
+                  Text('Value: ${parcel['value'] ?? ''}', style: Theme.of(context).textTheme.bodyMedium),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );

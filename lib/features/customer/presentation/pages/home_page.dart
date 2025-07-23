@@ -9,7 +9,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final stats = [
       {'icon': Icons.local_shipping, 'label': 'Shipments', 'value': '2', 'color': AppTheme.primaryOrange},
-      {'icon': Icons.request_quote, 'label': 'Quotes', 'value': '1', 'color': AppTheme.primaryBlue},
+      {'icon': Icons.request_quote, 'label': 'Quotes', 'value': '1', 'color': AppTheme.successGreen},
       {'icon': Icons.check_circle, 'label': 'Delivered', 'value': '5', 'color': AppTheme.successGreen},
     ];
     return Stack(
@@ -26,7 +26,7 @@ class HomePage extends StatelessWidget {
                 Container(
                   margin: const EdgeInsets.only(bottom: 24),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryDarkBlue,
+                    color: AppTheme.successGreen,
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
@@ -123,7 +123,7 @@ class _CallFab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FloatingActionButton(
-      backgroundColor: AppTheme.primaryDarkBlue,
+      backgroundColor: AppTheme.successGreen,
       child: const Icon(Icons.phone, color: Colors.white),
       onPressed: () {
         showModalBottomSheet(

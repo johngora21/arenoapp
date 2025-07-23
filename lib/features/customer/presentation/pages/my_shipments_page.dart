@@ -59,9 +59,9 @@ class _MyShipmentsPageState extends State<MyShipmentsPage> {
         case 'In Transit':
           return AppTheme.primaryOrange;
         case 'Pending Pickup':
-          return AppTheme.primaryDarkBlue;
+          return AppTheme.successGreen;
         default:
-          return AppTheme.primaryDarkBlue;
+          return AppTheme.successGreen;
       }
     }
 
@@ -83,14 +83,14 @@ class _MyShipmentsPageState extends State<MyShipmentsPage> {
       if (status == 'Delivered' || status == 'Pending Pickup' || type == 'Freight') {
         return AppTheme.primaryOrange;
       } else {
-        return AppTheme.primaryDarkBlue;
+        return AppTheme.successGreen;
       }
     }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Shipments'),
-        backgroundColor: AppTheme.primaryDarkBlue,
+        backgroundColor: AppTheme.successGreen,
         elevation: 0,
         centerTitle: true,
       ),
@@ -107,7 +107,7 @@ class _MyShipmentsPageState extends State<MyShipmentsPage> {
                     decoration: InputDecoration(
                       labelText: 'Search by Tracking Number',
                       labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(fontFamily: 'Poppins', color: AppTheme.slate500),
-                      prefixIcon: const Icon(Icons.search, color: AppTheme.primaryDarkBlue),
+                      prefixIcon: const Icon(Icons.search, color: AppTheme.successGreen),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       filled: true,
                       fillColor: Colors.white,
@@ -127,7 +127,7 @@ class _MyShipmentsPageState extends State<MyShipmentsPage> {
                     DropdownMenuItem(value: 'Pending Pickup', child: Text('Pending Pickup')),
                   ],
                   onChanged: (v) => setState(() => _selectedStatus = v ?? 'All'),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontFamily: 'Poppins', color: AppTheme.primaryDarkBlue),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontFamily: 'Poppins', color: AppTheme.successGreen),
                   dropdownColor: Colors.white,
                   underline: Container(),
                   borderRadius: BorderRadius.circular(12),
@@ -156,7 +156,7 @@ class _MyShipmentsPageState extends State<MyShipmentsPage> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                     elevation: 8,
                     color: Colors.white,
-                    shadowColor: AppTheme.primaryDarkBlue.withOpacity(0.08),
+                    shadowColor: AppTheme.successGreen.withOpacity(0.08),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
                       child: Row(
@@ -164,13 +164,13 @@ class _MyShipmentsPageState extends State<MyShipmentsPage> {
                         children: [
                           Container(
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryDarkBlue.withOpacity(0.08),
+                              color: AppTheme.successGreen.withOpacity(0.08),
                               borderRadius: BorderRadius.circular(16),
                             ),
                             padding: const EdgeInsets.all(16),
                             child: Icon(
                               Icons.local_shipping_rounded,
-                              color: AppTheme.primaryDarkBlue,
+                              color: AppTheme.successGreen,
                               size: 38,
                             ),
                           ),
@@ -190,7 +190,7 @@ class _MyShipmentsPageState extends State<MyShipmentsPage> {
                                             shipment['trackingNumber']!,
                                             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                               fontFamily: 'Poppins',
-                                              color: AppTheme.primaryDarkBlue,
+                                              color: AppTheme.successGreen,
                                               fontWeight: FontWeight.w700,
                                             ),
                                           ),
@@ -227,7 +227,7 @@ class _MyShipmentsPageState extends State<MyShipmentsPage> {
                                 const SizedBox(height: 10),
                                 Row(
                                   children: [
-                                    Icon(Icons.confirmation_number, color: AppTheme.primaryDarkBlue, size: 18),
+                                    Icon(Icons.confirmation_number, color: AppTheme.successGreen, size: 18),
                                     const SizedBox(width: 6),
                                     Text(
                                       shipment['parcelNumber']!,
@@ -251,7 +251,7 @@ class _MyShipmentsPageState extends State<MyShipmentsPage> {
                                       ),
                                     ),
                                     const SizedBox(width: 18),
-                                    Icon(Icons.person, color: AppTheme.primaryDarkBlue, size: 18),
+                                    Icon(Icons.person, color: AppTheme.successGreen, size: 18),
                                     const SizedBox(width: 6),
                                     Text(
                                       shipment['receiver']!,
@@ -265,7 +265,7 @@ class _MyShipmentsPageState extends State<MyShipmentsPage> {
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    Icon(Icons.inventory_2_rounded, color: AppTheme.primaryDarkBlue, size: 18),
+                                    Icon(Icons.inventory_2_rounded, color: AppTheme.successGreen, size: 18),
                                     const SizedBox(width: 6),
                                     Text(
                                       shipment['packageName']!,

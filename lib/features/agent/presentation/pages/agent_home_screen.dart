@@ -20,7 +20,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Agent Home'),
-        backgroundColor: AppTheme.primaryDarkBlue,
+        backgroundColor: AppTheme.successGreen,
         elevation: 0,
       ),
       drawer: AgentDrawer(),
@@ -39,7 +39,7 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: selectedTab == 'Shipments' ? AppTheme.primaryDarkBlue : AppTheme.slate200,
+                          backgroundColor: selectedTab == 'Shipments' ? AppTheme.successGreen : AppTheme.slate200,
                           foregroundColor: selectedTab == 'Shipments' ? Colors.white : AppTheme.slate900,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -218,7 +218,7 @@ class _NotificationCard extends StatelessWidget {
             Expanded(
               child: Text(
                 message,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.primaryDarkBlue, fontWeight: FontWeight.w600),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.successGreen, fontWeight: FontWeight.w600),
               ),
             ),
           ],

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart' as flutter_map;
+import 'package:latlong2/latlong.dart' as latlng2;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -28,8 +29,8 @@ class _DriverCreateShipmentPageState extends State<DriverCreateShipmentPage> {
   final _courierContactPersonController = TextEditingController();
   final _courierContactPhoneController = TextEditingController();
   final _courierContactEmailController = TextEditingController();
-  LatLng? _pickupLatLng;
-  LatLng? _deliveryLatLng;
+  latlng2.LatLng? _pickupLatLng;
+  latlng2.LatLng? _deliveryLatLng;
   final _packageNameController = TextEditingController();
   final _businessNameController = TextEditingController();
   final CollectionReference quotesRef = FirebaseFirestore.instance.collection('quotes');
@@ -76,7 +77,7 @@ class _DriverCreateShipmentPageState extends State<DriverCreateShipmentPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Register Shipment'),
-        backgroundColor: AppTheme.primaryDarkBlue,
+        backgroundColor: AppTheme.successGreen,
         elevation: 0,
       ),
       body: Container(
@@ -96,7 +97,7 @@ class _DriverCreateShipmentPageState extends State<DriverCreateShipmentPage> {
                   Center(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryOrange,
+                        backgroundColor: AppTheme.successGreen,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
                       ),
@@ -126,14 +127,40 @@ class _DriverCreateShipmentPageState extends State<DriverCreateShipmentPage> {
   List<Widget> _buildCourierSection(BuildContext context) {
     return [
       _sectionHeader('Service Type'),
-      _dropdownField(
-        value: _courierType,
-        items: const [
-          'Personal Items',
-          'Business Items',
+      Row(
+        children: [
+          Expanded(
+            child: _dropdownField(
+              value: _courierType,
+              items: const [
+                'Personal Items',
+                'Business Items',
+              ],
+              hint: 'Select service type',
+              onChanged: (v) => setState(() => _courierType = v ?? ''),
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.qr_code_scanner, color: AppTheme.successGreen, size: 28),
+            tooltip: 'Scan Shipment',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Scan Shipment'),
+                  content: const Text('Simulate scanning a shipment barcode/QR to verify.'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ],
-        hint: 'Select service type',
-        onChanged: (v) => setState(() => _courierType = v ?? ''),
       ),
       if (_courierType == 'Business Items')
         Padding(
@@ -216,7 +243,7 @@ class _DriverCreateShipmentPageState extends State<DriverCreateShipmentPage> {
       Align(
         alignment: Alignment.centerLeft,
         child: OutlinedButton.icon(
-          icon: const Icon(Icons.add),
+          icon: const Icon(Icons.add, color: AppTheme.successGreen),
           label: const Text('Add Item'),
           onPressed: () => setState(() => _packageItems.add(_PackageItem())),
         ),
@@ -265,7 +292,7 @@ class _DriverCreateShipmentPageState extends State<DriverCreateShipmentPage> {
           floatingLabelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: AppTheme.slate900),
           hintText: hint,
           hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w300, color: AppTheme.slate300),
-          prefixIcon: Icon(icon, color: AppTheme.primaryOrange),
+          prefixIcon: Icon(icon, color: AppTheme.successGreen),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           filled: true,
           fillColor: Colors.white,
@@ -294,22 +321,22 @@ class _DriverCreateShipmentPageState extends State<DriverCreateShipmentPage> {
     );
   }
 
-  Widget _mapPickerButton(LatLng? value, ValueChanged<LatLng> onPicked, {required String label}) {
+  Widget _mapPickerButton(latlng2.LatLng? value, ValueChanged<latlng2.LatLng> onPicked, {required String label}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: OutlinedButton.icon(
-        icon: const Icon(Icons.location_on),
+        icon: const Icon(Icons.location_on, color: AppTheme.successGreen),
         label: Text(value == null
             ? 'Set $label Location'
             : '$label: ${value.latitude.toStringAsFixed(5)}, ${value.longitude.toStringAsFixed(5)}'),
         onPressed: () async {
-          final picked = await showModalBottomSheet<LatLng>(
+          final picked = await showModalBottomSheet<latlng2.LatLng>(
             context: context,
             isScrollControlled: true,
             builder: (ctx) => SizedBox(
               height: MediaQuery.of(context).size.height * 0.6,
-              child: _GoogleMapPicker(
-                initial: value ?? const LatLng(-6.7924, 39.2083),
+              child: _OpenStreetMapPicker(
+                initial: value ?? latlng2.LatLng(-6.7924, 39.2083),
                 label: label,
               ),
             ),
@@ -336,7 +363,7 @@ class _DriverCreateShipmentPageState extends State<DriverCreateShipmentPage> {
               ),
             ),
           OutlinedButton.icon(
-            icon: const Icon(Icons.image),
+            icon: const Icon(Icons.image, color: AppTheme.successGreen),
             label: Text(item.image == null ? 'Upload Image' : 'Change Image'),
             onPressed: () async {
               final result = await FilePicker.platform.pickFiles(
@@ -350,7 +377,7 @@ class _DriverCreateShipmentPageState extends State<DriverCreateShipmentPage> {
           ),
           if (item.image != null)
             IconButton(
-              icon: const Icon(Icons.close),
+              icon: const Icon(Icons.close, color: AppTheme.successGreen),
               onPressed: () => onChanged(null),
             ),
         ],
@@ -400,17 +427,16 @@ class _PackageItem {
   PlatformFile? image;
 }
 
-class _GoogleMapPicker extends StatefulWidget {
-  final LatLng initial;
+class _OpenStreetMapPicker extends StatefulWidget {
+  final latlng2.LatLng initial;
   final String label;
-  const _GoogleMapPicker({required this.initial, required this.label});
+  const _OpenStreetMapPicker({required this.initial, required this.label});
   @override
-  State<_GoogleMapPicker> createState() => _GoogleMapPickerState();
+  State<_OpenStreetMapPicker> createState() => _OpenStreetMapPickerState();
 }
 
-class _GoogleMapPickerState extends State<_GoogleMapPicker> {
-  late LatLng _selected;
-  GoogleMapController? _controller;
+class _OpenStreetMapPickerState extends State<_OpenStreetMapPicker> {
+  late latlng2.LatLng _selected;
   @override
   void initState() {
     super.initState();
@@ -422,23 +448,31 @@ class _GoogleMapPickerState extends State<_GoogleMapPicker> {
       children: [
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Text('Select  {widget.label} Location', style: Theme.of(context).textTheme.titleMedium),
+          child: Text('Select ${widget.label} Location', style: Theme.of(context).textTheme.titleMedium),
         ),
         Expanded(
-          child: GoogleMap(
-            initialCameraPosition: CameraPosition(target: _selected, zoom: 15),
-            onMapCreated: (controller) => _controller = controller,
-            markers: {
-              Marker(
-                markerId: const MarkerId('selected'),
-                position: _selected,
-                draggable: true,
-                onDragEnd: (pos) => setState(() => _selected = pos),
+          child: flutter_map.FlutterMap(
+            options: flutter_map.MapOptions(
+              initialCenter: _selected,
+              initialZoom: 15,
+              onTap: (tapPos, latlng) => setState(() => _selected = latlng),
+            ),
+            children: [
+              flutter_map.TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.arenoapp',
               ),
-            },
-            onTap: (latlng) => setState(() => _selected = latlng),
-            myLocationButtonEnabled: true,
-            zoomControlsEnabled: true,
+              flutter_map.MarkerLayer(
+                markers: [
+                  flutter_map.Marker(
+                    width: 40,
+                    height: 40,
+                    point: _selected,
+                    child: const Icon(Icons.location_pin, color: Colors.red, size: 40),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
         Padding(

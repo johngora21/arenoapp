@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/providers/auth_provider.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   final String userType;
@@ -83,13 +85,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
         userData,
       );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Account created successfully!'),
-            backgroundColor: AppTheme.successGreen,
-          ),
-        );
+      final authState = ref.read(authProvider);
+      if (authState.user != null && authState.userType == 'customer') {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Account created successfully!'),
+              backgroundColor: AppTheme.successGreen,
+            ),
+          );
+          Navigator.of(context).pushReplacementNamed('/customer_home');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -104,6 +110,37 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       if (mounted) {
         setState(() => _isLoading = false);
       }
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+    // GoogleSignIn sign in for v7.1.1+
+    GoogleSignInAccount? googleUser;
+    try {
+      googleUser = await GoogleSignIn.instance.authenticate();
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google sign in failed: $e'), backgroundColor: AppTheme.errorRed),
+        );
+      }
+      return;
+    }
+    if (googleUser == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+    final credential = GoogleAuthProvider.credential(
+      idToken: googleAuth.idToken,
+    );
+    await FirebaseAuth.instance.signInWithCredential(credential);
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Signed in with Google!'), backgroundColor: AppTheme.successGreen),
+      );
     }
   }
 
@@ -156,6 +193,48 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Only allow customer signup
+    if (widget.userType != 'customer') {
+      return Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: AppTheme.slateGradient,
+          ),
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Card(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.lock, size: 48, color: AppTheme.primaryOrange),
+                      const SizedBox(height: 18),
+                      Text('Account creation for this role is managed by the admin.',
+                        style: Theme.of(context).textTheme.titleMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      Text('Please contact your administrator to receive your credentials.',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Back'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -403,10 +482,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                             textStyle: Theme.of(context).textTheme.titleMedium,
                             backgroundColor: Colors.white,
                           ),
-                          onPressed: () {
-                            // TODO: Implement Google sign-up logic
-                          },
-                          child: const Center(child: Text('Sign up with Google')),
+                          onPressed: _isLoading ? null : _signInWithGoogle,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _googleLogoContainer(),
+                              const SizedBox(width: 12),
+                              const Text('Sign up with Google'),
+                            ],
+                          ),
                         ),
                       ],
                     ),

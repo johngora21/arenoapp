@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart' as flutter_map;
+import 'package:latlong2/latlong.dart' as latlng2;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -70,19 +71,19 @@ class _BookingPageState extends State<BookingPage> {
     _CourierParcel(),
   ];
   // For locations, map from parcel index to LatLng
-  Map<int, LatLng?> _parcelPickupLocations = {};
-  Map<int, LatLng?> _parcelDeliveryLocations = {};
+  Map<int, latlng2.LatLng?> _parcelPickupLocations = {};
+  Map<int, latlng2.LatLng?> _parcelDeliveryLocations = {};
   int? _selectedParcelForPickup;
   int? _selectedParcelForDelivery;
 
-  LatLng? _pickupLatLng;
-  LatLng? _deliveryLatLng;
+  latlng2.LatLng? _pickupLatLng;
+  latlng2.LatLng? _deliveryLatLng;
   List<PlatformFile> _packageFiles = [];
   // Restore moving/freight state for other tabs
-  LatLng? _movingPickupLatLng;
-  LatLng? _movingDeliveryLatLng;
-  LatLng? _freightPickupLatLng;
-  LatLng? _freightDeliveryLatLng;
+  latlng2.LatLng? _movingPickupLatLng;
+  latlng2.LatLng? _movingDeliveryLatLng;
+  latlng2.LatLng? _freightPickupLatLng;
+  latlng2.LatLng? _freightDeliveryLatLng;
   List<PlatformFile> _movingFiles = [];
   List<PlatformFile> _freightFiles = [];
 
@@ -163,7 +164,7 @@ class _BookingPageState extends State<BookingPage> {
                 Center(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryOrange,
+                      backgroundColor: AppTheme.successGreen,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       textStyle: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
                     ),
@@ -193,7 +194,7 @@ class _BookingPageState extends State<BookingPage> {
     final isSelected = _serviceType == type;
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        backgroundColor: isSelected ? AppTheme.primaryDarkBlue : AppTheme.slate200,
+        backgroundColor: isSelected ? AppTheme.successGreen : AppTheme.slate200,
         foregroundColor: isSelected ? Colors.white : AppTheme.slate900,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
@@ -567,7 +568,7 @@ class _BookingPageState extends State<BookingPage> {
     );
   }
 
-  Widget _mapPickerButton(LatLng? value, ValueChanged<LatLng> onPicked, {required String label}) {
+  Widget _mapPickerButton(latlng2.LatLng? value, ValueChanged<latlng2.LatLng> onPicked, {required String label}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: OutlinedButton.icon(
@@ -576,13 +577,13 @@ class _BookingPageState extends State<BookingPage> {
             ? 'Set $label Location'
             : '$label: ${value.latitude.toStringAsFixed(5)}, ${value.longitude.toStringAsFixed(5)}'),
         onPressed: () async {
-          final picked = await showModalBottomSheet<LatLng>(
+          final picked = await showModalBottomSheet<latlng2.LatLng>(
             context: context,
             isScrollControlled: true,
             builder: (ctx) => SizedBox(
               height: MediaQuery.of(context).size.height * 0.6,
-              child: _GoogleMapPicker(
-                initial: value ?? const LatLng(-6.7924, 39.2083),
+              child: _OpenStreetMapPicker(
+                initial: value ?? latlng2.LatLng(-6.7924, 39.2083),
                 label: label,
               ),
             ),
@@ -697,17 +698,16 @@ class _PackageItem {
   PlatformFile? image;
 }
 
-class _GoogleMapPicker extends StatefulWidget {
-  final LatLng initial;
+class _OpenStreetMapPicker extends StatefulWidget {
+  final latlng2.LatLng initial;
   final String label;
-  const _GoogleMapPicker({required this.initial, required this.label});
+  const _OpenStreetMapPicker({required this.initial, required this.label});
   @override
-  State<_GoogleMapPicker> createState() => _GoogleMapPickerState();
+  State<_OpenStreetMapPicker> createState() => _OpenStreetMapPickerState();
 }
 
-class _GoogleMapPickerState extends State<_GoogleMapPicker> {
-  late LatLng _selected;
-  GoogleMapController? _controller;
+class _OpenStreetMapPickerState extends State<_OpenStreetMapPicker> {
+  late latlng2.LatLng _selected;
   @override
   void initState() {
     super.initState();
@@ -719,23 +719,31 @@ class _GoogleMapPickerState extends State<_GoogleMapPicker> {
       children: [
         Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Text('Select  {widget.label} Location', style: Theme.of(context).textTheme.titleMedium),
+          child: Text('Select ${widget.label} Location', style: Theme.of(context).textTheme.titleMedium),
         ),
         Expanded(
-          child: GoogleMap(
-            initialCameraPosition: CameraPosition(target: _selected, zoom: 15),
-            onMapCreated: (controller) => _controller = controller,
-            markers: {
-              Marker(
-                markerId: const MarkerId('selected'),
-                position: _selected,
-                draggable: true,
-                onDragEnd: (pos) => setState(() => _selected = pos),
+          child: flutter_map.FlutterMap(
+            options: flutter_map.MapOptions(
+              initialCenter: _selected,
+              initialZoom: 15,
+              onTap: (tapPos, latlng) => setState(() => _selected = latlng),
+            ),
+            children: [
+              flutter_map.TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.arenoapp',
               ),
-            },
-            onTap: (latlng) => setState(() => _selected = latlng),
-            myLocationButtonEnabled: true,
-            zoomControlsEnabled: true,
+              flutter_map.MarkerLayer(
+                markers: [
+                  flutter_map.Marker(
+                    width: 40,
+                    height: 40,
+                    point: _selected,
+                    child: const Icon(Icons.location_pin, color: Colors.red, size: 40),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
         Padding(

@@ -62,7 +62,7 @@ class _AgentShipmentsPageState extends State<AgentShipmentsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Shipments'),
-        backgroundColor: AppTheme.primaryDarkBlue,
+        backgroundColor: AppTheme.successGreen,
         elevation: 0,
       ),
       drawer: AgentDrawer(),
@@ -105,7 +105,7 @@ class _AgentShipmentsPageState extends State<AgentShipmentsPage> {
                       const SizedBox(width: 8),
                       _buildFilterButton('Approved', AppTheme.successGreen),
                       const SizedBox(width: 8),
-                      _buildFilterButton('All', AppTheme.primaryDarkBlue),
+                      _buildFilterButton('All', AppTheme.successGreen),
                     ],
                   ),
                 ),
@@ -158,7 +158,7 @@ class _AgentShipmentsPageState extends State<AgentShipmentsPage> {
                                       );
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppTheme.primaryDarkBlue,
+                                      backgroundColor: AppTheme.successGreen,
                                       foregroundColor: Colors.white,
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),

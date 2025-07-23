@@ -9,6 +9,8 @@ import '../../../driver/presentation/pages/driver_home_screen.dart';
 import '../../../agent/presentation/pages/agent_home_screen.dart';
 import '../../../supervisor/presentation/pages/supervisor_home_screen.dart';
 import 'user_type_selection_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'onboarding_screen.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -50,8 +52,16 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     _animationController.forward();
 
     // Navigate after animation
-    Future.delayed(const Duration(seconds: 3), () {
-      _checkAuthAndNavigate();
+    Future.delayed(const Duration(seconds: 3), () async {
+      final prefs = await SharedPreferences.getInstance();
+      final seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
+      if (!seenOnboarding) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+        );
+      } else {
+        _checkAuthAndNavigate();
+      }
     });
   }
 
@@ -89,7 +99,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
     } else {
       // User is not logged in
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const UserTypeSelectionScreen()),
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
       );
     }
   }

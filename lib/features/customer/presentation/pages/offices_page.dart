@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart' as flutter_map;
+import 'package:latlong2/latlong.dart' as latlng2;
 import '../../../../core/theme/app_theme.dart';
 
 class OfficesPage extends StatefulWidget {
@@ -57,21 +58,14 @@ class _OfficesPageState extends State<OfficesPage> {
       return matchesLocation && matchesQuery;
     }).toList();
 
-    // Prepare markers for Google Map (only for filtered offices)
-    final List<Marker> markers = filtered.map((office) {
+    // Prepare markers for OpenStreetMap (flutter_map)
+    final List<latlng2.LatLng> markerPoints = filtered.map((office) {
       double lat = 0, lng = 0;
       if (office['city'] == 'Dar es Salaam') { lat = -6.7924; lng = 39.2083; }
       if (office['city'] == 'Arusha') { lat = -3.3869; lng = 36.68299; }
       if (office['city'] == 'Mwanza') { lat = -2.5164; lng = 32.9175; }
       if (office['city'] == 'Dodoma') { lat = -6.1630; lng = 35.7516; }
-      return Marker(
-        markerId: MarkerId(office['name']!),
-        position: LatLng(lat, lng),
-        infoWindow: InfoWindow(title: office['name'], snippet: office['address']),
-        icon: BitmapDescriptor.defaultMarkerWithHue(
-          office['type'] == 'Branch' ? BitmapDescriptor.hueAzure : BitmapDescriptor.hueOrange,
-        ),
-      );
+      return latlng2.LatLng(lat, lng);
     }).toList();
 
     return Container(
@@ -119,29 +113,32 @@ class _OfficesPageState extends State<OfficesPage> {
           ],
         ),
             ),
-            // Google Map below search/filter
+            // OpenStreetMap below search/filter
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: SizedBox(
                 height: 240,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Builder(
-                    builder: (context) {
-                      try {
-                        return GoogleMap(
-                          initialCameraPosition: const CameraPosition(target: LatLng(-6.7924, 39.2083), zoom: 5.5),
-                          markers: Set<Marker>.of(markers),
-                          myLocationButtonEnabled: false,
-                          zoomControlsEnabled: false,
-                        );
-                      } catch (e) {
-                        return Container(
-                          color: Colors.grey[200],
-                          child: Center(child: Text('Map could not be loaded.')), 
-                        );
-                      }
-                    },
+                  child: flutter_map.FlutterMap(
+                    options: flutter_map.MapOptions(
+                      initialCenter: markerPoints.isNotEmpty ? markerPoints[0] : latlng2.LatLng(-6.7924, 39.2083),
+                      initialZoom: 5.5,
+                    ),
+                    children: [
+                      flutter_map.TileLayer(
+                        urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.arenoapp',
+                      ),
+                      flutter_map.MarkerLayer(
+                        markers: markerPoints.map((point) => flutter_map.Marker(
+                          width: 40,
+                          height: 40,
+                          point: point,
+                          child: const Icon(Icons.location_pin, color: Colors.red, size: 40),
+                        )).toList(),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -216,7 +213,7 @@ class _OfficesPageState extends State<OfficesPage> {
                 children: [
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryBlue,
+                      backgroundColor: AppTheme.successGreen,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     ),

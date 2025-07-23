@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
-// import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DummyUser {
   final String displayName;
@@ -46,23 +46,69 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   void _init() {
-    // Do not simulate a logged in user by default
-    // state = state.copyWith(user: DummyUser(displayName: 'Demo User', email: 'demo@areno.com'), userType: 'customer', isLoading: false);
+    // Optionally, check for existing Firebase user and set state
   }
 
   Future<void> signIn(String email, String password) async {
     state = state.copyWith(isLoading: true, error: null);
-    await Future.delayed(Duration(seconds: 1));
-    state = state.copyWith(user: DummyUser(displayName: 'Demo User', email: email), userType: 'customer', isLoading: false);
+    try {
+      final credential = await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
+      final user = credential.user;
+      if (user != null) {
+        // Optionally fetch userType from Firestore
+        state = state.copyWith(user: DummyUser(displayName: user.displayName ?? '', email: user.email ?? email), userType: 'customer', isLoading: false);
+      } else {
+        state = state.copyWith(error: 'No user found', isLoading: false);
+      }
+    } catch (e) {
+      state = state.copyWith(error: e.toString(), isLoading: false);
+    }
   }
 
   Future<void> signUp(String email, String password, String userType, Map<String, dynamic> userData) async {
     state = state.copyWith(isLoading: true, error: null);
-    await Future.delayed(Duration(seconds: 1));
-    state = state.copyWith(user: DummyUser(displayName: userData['displayName'] ?? 'Demo User', email: email), userType: userType, isLoading: false);
+    try {
+      // Check for existing email or phone in CRM
+      final crmRef = FirebaseFirestore.instance.collection('CRM');
+      final emailQuery = await crmRef.where('email', isEqualTo: email).limit(1).get();
+      final phone = userData['phone'] ?? '';
+      QuerySnapshot? phoneQuery;
+      if (phone.isNotEmpty) {
+        phoneQuery = await crmRef.where('phone', isEqualTo: phone).limit(1).get();
+      }
+      if (emailQuery.docs.isNotEmpty) {
+        state = state.copyWith(error: 'An account with this email already exists.', isLoading: false);
+        return;
+      }
+      if (phoneQuery != null && phoneQuery.docs.isNotEmpty) {
+        state = state.copyWith(error: 'An account with this phone number already exists.', isLoading: false);
+        return;
+      }
+      final credential = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
+      final user = credential.user;
+      if (user != null) {
+        await user.updateDisplayName(userData['name'] ?? '');
+        if (userType == 'customer') {
+          await crmRef.doc(user.uid).set({
+            'uid': user.uid,
+            'name': userData['name'] ?? '',
+            'email': email,
+            'phone': phone,
+            'userType': userType,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+        state = state.copyWith(user: DummyUser(displayName: userData['name'] ?? '', email: email), userType: userType, isLoading: false);
+      } else {
+        state = state.copyWith(error: 'User creation failed', isLoading: false);
+      }
+    } catch (e) {
+      state = state.copyWith(error: e.toString(), isLoading: false);
+    }
   }
 
   Future<void> signOut() async {
+    await FirebaseAuth.instance.signOut();
     state = state.copyWith(user: null, userType: null);
   }
 

@@ -7,6 +7,7 @@ import 'shared/providers/auth_provider.dart';
 import 'features/auth/presentation/pages/splash_screen.dart';
 import 'features/auth/presentation/pages/login_screen.dart';
 import 'features/auth/presentation/pages/signup_screen.dart';
+import 'features/auth/presentation/pages/onboarding_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,10 +31,11 @@ class ArenoExpressApp extends ConsumerWidget {
       title: AppConstants.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const SplashScreen(),
+      home: const OnboardingScreen(),
       routes: {
         '/login': (context) => const LoginScreen(),
         '/register': (context) => SignupScreen(userType: 'customer'),
+        '/onboarding': (context) => const OnboardingScreen(),
       },
     );
   }
