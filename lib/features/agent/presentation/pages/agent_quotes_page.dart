@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'agent_main_shell.dart';
 import 'agent_quote_details_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AgentQuotesPage extends StatefulWidget {
   const AgentQuotesPage({Key? key}) : super(key: key);
@@ -11,61 +13,9 @@ class AgentQuotesPage extends StatefulWidget {
 }
 
 class _AgentQuotesPageState extends State<AgentQuotesPage> {
-  // Mock pending quotes data
-  List<Map<String, dynamic>> pendingQuotes = [
-    {
-      'id': 'Q001',
-      'customer': 'John Doe',
-      'item': 'Electronics Package',
-      'amount': 120000,
-      'status': 'pending',
-      'details': '2x Laptop, 1x Phone',
-      'items': [
-        {
-          'name': 'Laptop',
-          'category': 'Electronics',
-          'quantity': '2',
-          'value': '100000',
-          'description': 'Dell XPS 13',
-          'image': 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308',
-        },
-        {
-          'name': 'Phone',
-          'category': 'Electronics',
-          'quantity': '1',
-          'value': '20000',
-          'description': 'iPhone 12',
-          'image': 'https://images.unsplash.com/photo-1516979187457-637abb4f9353',
-        },
-      ],
-    },
-    {
-      'id': 'Q002',
-      'customer': 'Alice',
-      'item': 'Clothing Box',
-      'amount': 30000,
-      'status': 'pending',
-      'details': '5x Shirt, 2x Jeans',
-      'items': [
-        {
-          'name': 'Shirt',
-          'category': 'Clothing',
-          'quantity': '5',
-          'value': '20000',
-          'description': 'Cotton shirts',
-          'image': 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308',
-        },
-        {
-          'name': 'Jeans',
-          'category': 'Clothing',
-          'quantity': '2',
-          'value': '10000',
-          'description': 'Blue jeans',
-          'image': 'https://images.unsplash.com/photo-1516979187457-637abb4f9353',
-        },
-      ],
-    },
-  ];
+  final CollectionReference quotesRef = FirebaseFirestore.instance.collection('quotes');
+  List<Map<String, dynamic>> pendingQuotes = [];
+  Stream<QuerySnapshot>? quotesStream;
 
   void _markAsPaid(int idx) {
     final quote = pendingQuotes[idx];
@@ -76,6 +26,20 @@ class _AgentQuotesPageState extends State<AgentQuotesPage> {
       SnackBar(content: Text('Payment received for ${quote['item']}. Item moved to pending shipments.')),
     );
     // TODO: Actually move to pending shipments in backend
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      quotesStream = quotesRef.where('agentId', isEqualTo: user.uid).snapshots();
+      quotesStream!.listen((snapshot) {
+        setState(() {
+          pendingQuotes = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+        });
+      });
+    }
   }
 
   @override

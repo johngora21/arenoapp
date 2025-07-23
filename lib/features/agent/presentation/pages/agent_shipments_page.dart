@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../widgets/agent_drawer.dart';
 import 'agent_shipment_details_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AgentShipmentsPage extends StatefulWidget {
   const AgentShipmentsPage({Key? key}) : super(key: key);
@@ -11,106 +13,27 @@ class AgentShipmentsPage extends StatefulWidget {
 }
 
 class _AgentShipmentsPageState extends State<AgentShipmentsPage> {
-  List<Map<String, dynamic>> shipments = [
-    {
-      'id': 'TRACK123',
-      'packageNumber': 'PKG001',
-      'sender': 'John Doe',
-      'receiver': 'Jane Smith',
-      'senderLocation': 'Dar es Salaam',
-      'receiverLocation': 'Arusha',
-      'type': 'Business',
-      'category': 'Electronics',
-      'status': 'Pending',
-      'escrow': true,
-      'amount': 'TZS 120,000',
-      'details': 'Fragile, handle with care. Delivery before 5pm.',
-      'images': [
-        'https://images.unsplash.com/photo-1519125323398-675f0ddb6308',
-        'https://images.unsplash.com/photo-1516979187457-637abb4f9353',
-      ],
-      'videos': [],
-      'parcels': [
-        {
-          'barcode': 'PCL001',
-          'name': 'Laptop',
-          'category': 'Electronics',
-          'quantity': '1',
-          'quality': 'New',
-          'image': 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308',
-          'description': 'Dell XPS 13',
-        },
-        {
-          'barcode': 'PCL002',
-          'name': 'Mouse',
-          'category': 'Accessories',
-          'quantity': '2',
-          'quality': 'New',
-          'image': 'https://images.unsplash.com/photo-1516979187457-637abb4f9353',
-          'description': 'Wireless Mouse',
-        },
-      ],
-    },
-    {
-      'id': 'TRACK456',
-      'packageNumber': 'PKG002',
-      'sender': 'Alice',
-      'receiver': 'Bob',
-      'senderLocation': 'Mwanza',
-      'receiverLocation': 'Dodoma',
-      'type': 'Personal',
-      'category': 'Clothing',
-      'status': 'Arrived',
-      'escrow': false,
-      'amount': 'TZS 30,000',
-      'details': 'Standard delivery.',
-      'images': [
-        'https://images.unsplash.com/photo-1519125323398-675f0ddb6308',
-      ],
-      'videos': [],
-      'parcels': [
-        {
-          'barcode': 'PCL003',
-          'name': 'Shirt',
-          'category': 'Clothing',
-          'quantity': '3',
-          'quality': 'New',
-          'image': 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308',
-          'description': 'Cotton shirts',
-        },
-      ],
-    },
-    {
-      'id': 'TRACK789',
-      'packageNumber': 'PKG003',
-      'sender': 'Business Ltd',
-      'receiver': 'Client X',
-      'senderLocation': 'Dar es Salaam',
-      'receiverLocation': 'Moshi',
-      'type': 'Business',
-      'category': 'Documents',
-      'status': 'Approved',
-      'escrow': true,
-      'amount': 'TZS 200,000',
-      'details': 'Confidential documents. Signature required.',
-      'images': [],
-      'videos': [],
-      'parcels': [
-        {
-          'barcode': 'PCL004',
-          'name': 'Contract',
-          'category': 'Documents',
-          'quantity': '1',
-          'quality': 'Original',
-          'image': 'https://images.unsplash.com/photo-1519125323398-675f0ddb6308',
-          'description': 'Signed contract',
-        },
-      ],
-    },
-  ];
+  final CollectionReference shipmentsRef = FirebaseFirestore.instance.collection('shipments');
+  List<Map<String, dynamic>> shipments = [];
+  Stream<QuerySnapshot>? shipmentsStream;
+
   bool isLoading = false;
   String filter = 'Pending';
   String searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      shipmentsStream = shipmentsRef.where('agentId', isEqualTo: user.uid).snapshots();
+      shipmentsStream!.listen((snapshot) {
+        setState(() {
+          shipments = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+        });
+      });
+    }
+  }
 
   void _simulateScan(int index) async {
     setState(() { isLoading = true; });
