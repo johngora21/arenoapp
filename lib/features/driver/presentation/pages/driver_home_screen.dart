@@ -7,6 +7,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' as gmaps;
 import 'package:flutter_map/flutter_map.dart' as flutter_map;
 import 'package:latlong2/latlong.dart' as latlng2;
+import 'driver_profile_page.dart';
+import 'driver_payments_page.dart';
+import 'driver_shipments_page.dart';
+import 'driver_create_shipment_page.dart';
 
 class DriverHomeScreen extends ConsumerStatefulWidget {
   const DriverHomeScreen({super.key});
@@ -438,6 +442,8 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> with Ticker
 class _DriverDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final username = user?.displayName ?? user?.email ?? 'Driver';
     return Drawer(
       child: Container(
         decoration: const BoxDecoration(
@@ -446,26 +452,71 @@ class _DriverDrawer extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 0),
           children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 22,
+                        backgroundColor: Colors.white,
+                        child: Icon(Icons.person, color: AppTheme.successGreen, size: 28),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          username,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
             ListTile(
               leading: Icon(Icons.person, color: AppTheme.successGreen),
               title: const Text('Profile'),
-              onTap: () {},
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const DriverProfilePage()),
+                );
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.payment, color: AppTheme.successGreen),
+              title: const Text('Payments'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const DriverPaymentsPage()),
+                );
+              },
             ),
             ListTile(
               leading: Icon(Icons.local_shipping, color: AppTheme.successGreen),
-              title: const Text('My Shipments'),
-              onTap: () {},
+              title: const Text('Shipments'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const DriverShipmentsPage()),
+                );
+              },
             ),
             ListTile(
-              leading: Icon(Icons.analytics, color: AppTheme.successGreen),
-              title: const Text('Analytics'),
-              onTap: () {},
-            ),
-            const Divider(),
-            ListTile(
-              leading: Icon(Icons.logout, color: AppTheme.successGreen),
-              title: const Text('Logout'),
-              onTap: () {},
+              leading: Icon(Icons.add_box, color: AppTheme.successGreen),
+              title: const Text('Create Shipment'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const DriverCreateShipmentPage()),
+                );
+              },
             ),
           ],
         ),
@@ -547,3 +598,5 @@ class _LocationSuggestionTile extends StatelessWidget {
     );
   }
 }
+
+
