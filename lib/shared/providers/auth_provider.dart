@@ -69,7 +69,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       // Check for existing email or phone in CRM
-      final crmRef = FirebaseFirestore.instance.collection('CRM');
+      final crmRef = FirebaseFirestore.instance.collection('customers');
       final emailQuery = await crmRef.where('email', isEqualTo: email).limit(1).get();
       final phone = userData['phone'] ?? '';
       QuerySnapshot? phoneQuery;

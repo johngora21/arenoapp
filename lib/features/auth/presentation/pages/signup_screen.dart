@@ -5,6 +5,7 @@ import '../../../../core/theme/app_theme.dart';
 import '../../../../shared/providers/auth_provider.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   final String userType;
@@ -67,24 +68,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   }
 
   Future<void> _signUp() async {
-    if (!_formKey.currentState!.validate()) return;
-
+    if (!_formKey.currentState!.validate() || _isLoading) return;
     setState(() => _isLoading = true);
-
     try {
       final userData = {
         'name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
         'userType': widget.userType,
       };
-
       await ref.read(authProvider.notifier).signUp(
         _emailController.text.trim(),
         _passwordController.text,
         widget.userType,
         userData,
       );
-
       final authState = ref.read(authProvider);
       if (authState.user != null && authState.userType == 'customer') {
         if (mounted) {
@@ -95,6 +92,12 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             ),
           );
           Navigator.of(context).pushReplacementNamed('/customer_home');
+        }
+      } else if (authState.error != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(authState.error!), backgroundColor: AppTheme.errorRed),
+          );
         }
       }
     } catch (e) {
@@ -115,10 +118,17 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   Future<void> _signInWithGoogle() async {
     setState(() => _isLoading = true);
-    // GoogleSignIn sign in for v7.1.1+
     GoogleSignInAccount? googleUser;
     try {
       googleUser = await GoogleSignIn.instance.authenticate();
+    } on GoogleSignInException catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google sign in failed: ${e.code}: ${e.toString()}'), backgroundColor: AppTheme.errorRed),
+        );
+      }
+      return;
     } catch (e) {
       setState(() => _isLoading = false);
       if (mounted) {
@@ -136,12 +146,29 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
     final credential = GoogleAuthProvider.credential(
       idToken: googleAuth.idToken,
     );
-    await FirebaseAuth.instance.signInWithCredential(credential);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Signed in with Google!'), backgroundColor: AppTheme.successGreen),
-      );
+    final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+    final user = userCredential.user;
+    if (user != null) {
+      final crmRef = FirebaseFirestore.instance.collection('CRM');
+      final doc = await crmRef.doc(user.uid).get();
+      if (!doc.exists) {
+        await crmRef.doc(user.uid).set({
+          'uid': user.uid,
+          'name': user.displayName ?? '',
+          'email': user.email ?? '',
+          'phone': '',
+          'userType': 'customer',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Signed in with Google!'), backgroundColor: AppTheme.successGreen),
+        );
+        Navigator.of(context).pushReplacementNamed('/customer_home');
+      }
     }
+    setState(() => _isLoading = false);
   }
 
   Widget _googleLogoContainer() {

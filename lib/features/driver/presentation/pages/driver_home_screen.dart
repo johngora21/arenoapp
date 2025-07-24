@@ -12,6 +12,8 @@ import 'driver_payments_page.dart';
 import 'driver_shipments_page.dart';
 import 'driver_create_shipment_page.dart';
 import 'driver_quotes_page.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class DriverHomeScreen extends ConsumerStatefulWidget {
   const DriverHomeScreen({super.key});
@@ -24,6 +26,38 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> with Ticker
   bool isSearchExpanded = false;
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
+
+  // For live OSM search
+  final TextEditingController _originController = TextEditingController();
+  final TextEditingController _destinationController = TextEditingController();
+  List<Map<String, dynamic>> _searchResults = [];
+  bool _isSearching = false;
+
+  Future<void> _searchLocation(String query) async {
+    if (query.isEmpty) {
+      setState(() => _searchResults = []);
+      return;
+    }
+    setState(() => _isSearching = true);
+    final url = Uri.parse('https://nominatim.openstreetmap.org/search?q=$query&format=json&addressdetails=1&limit=5');
+    final response = await http.get(url, headers: {'User-Agent': 'arenoapp/1.0'});
+    if (response.statusCode == 200) {
+      final List data = json.decode(response.body);
+      setState(() {
+        _searchResults = data.map<Map<String, dynamic>>((item) => {
+          'display_name': item['display_name'],
+          'lat': item['lat'],
+          'lon': item['lon'],
+        }).toList();
+        _isSearching = false;
+      });
+    } else {
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -341,6 +375,8 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> with Ticker
                               _LocationSearchField(
                                 hintText: 'Origin (Pickup Location)',
                                 icon: Icons.my_location,
+                                controller: _originController,
+                                onChanged: _searchLocation,
                       ),
                       const SizedBox(height: 16),
                               // Dotted line connecting origin to destination
@@ -391,6 +427,8 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> with Ticker
                               _LocationSearchField(
                                 hintText: 'Destination (Drop-off Location)',
                                 icon: Icons.location_on,
+                                controller: _destinationController,
+                                onChanged: _searchLocation,
                               ),
                             ],
                           ),
@@ -399,31 +437,36 @@ class _DriverHomeScreenState extends ConsumerState<DriverHomeScreen> with Ticker
                 Expanded(
                           child: Container(
                             color: Colors.grey[50],
-                            child: ListView(
-                              padding: const EdgeInsets.all(16),
+                            child: Column(
                     children: [
-                                // Mock location suggestions
-                                _LocationSuggestionTile(
-                                  title: 'Dar es Salaam Airport',
-                                  subtitle: 'Dar es Salaam, Tanzania',
-                                  icon: Icons.flight,
-                                ),
-                                _LocationSuggestionTile(
-                                  title: 'Arusha City Center',
-                                  subtitle: 'Arusha, Tanzania',
-                                  icon: Icons.location_city,
-                                ),
-                                _LocationSuggestionTile(
-                                  title: 'Mwanza Port',
-                                  subtitle: 'Mwanza, Tanzania',
-                                  icon: Icons.local_shipping,
-                                ),
-                                _LocationSuggestionTile(
-                                  title: 'Dodoma Capital',
-                                  subtitle: 'Dodoma, Tanzania',
-                                  icon: Icons.account_balance,
-                                ),
-                    ],
+                                if (_isSearching)
+                                  const Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                if (!_isSearching && _searchResults.isEmpty)
+                                  const Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: Text('No results'),
+                                  ),
+                                if (!_isSearching && _searchResults.isNotEmpty)
+                                  Expanded(
+                                    child: ListView.builder(
+                                      itemCount: _searchResults.length,
+                                      itemBuilder: (context, idx) {
+                                        final result = _searchResults[idx];
+                                        return _LocationSuggestionTile(
+                                          title: result['display_name'],
+                                          subtitle: '',
+                                          icon: Icons.location_on,
+                                          onTap: () {
+                                            // You can set the controller text or handle selection here
+                                          },
+                                        );
+                                      },
+                                    ),
+                                  ),
+                              ],
                             ),
                   ),
                 ),
@@ -460,7 +503,7 @@ class _DriverDrawer extends StatelessWidget {
                 children: [
                   const SizedBox(height: 8),
                   Row(
-                    children: [
+      children: [
                       CircleAvatar(
                         radius: 22,
                         backgroundColor: Colors.white,
@@ -538,10 +581,14 @@ class _DriverDrawer extends StatelessWidget {
 class _LocationSearchField extends StatelessWidget {
   final String hintText;
   final IconData icon;
-  const _LocationSearchField({required this.hintText, required this.icon});
+  final TextEditingController? controller;
+  final ValueChanged<String>? onChanged;
+  const _LocationSearchField({required this.hintText, required this.icon, this.controller, this.onChanged});
   @override
   Widget build(BuildContext context) {
     return TextField(
+      controller: controller,
+      onChanged: onChanged,
       decoration: InputDecoration(
         prefixIcon: Icon(icon, color: AppTheme.successGreen),
         hintText: hintText,
@@ -571,11 +618,13 @@ class _LocationSuggestionTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final IconData icon;
+  final VoidCallback? onTap;
 
   const _LocationSuggestionTile({
     required this.title,
     required this.subtitle,
     required this.icon,
+    this.onTap,
   });
 
   @override
@@ -596,15 +645,15 @@ class _LocationSuggestionTile extends StatelessWidget {
           color: Colors.black87,
         ),
       ),
-      subtitle: Text(
-        subtitle,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Colors.grey[600],
-        ),
-      ),
-      onTap: () {
-        // Handle location selection
-      },
+      subtitle: subtitle.isNotEmpty
+          ? Text(
+              subtitle,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.grey[600],
+              ),
+            )
+          : null,
+      onTap: onTap,
     );
   }
 }

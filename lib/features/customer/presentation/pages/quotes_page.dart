@@ -45,7 +45,7 @@ class QuotesPage extends StatelessWidget {
                 separatorBuilder: (_, __) => const SizedBox(height: 16),
                 itemBuilder: (context, idx) {
                   final q = pendingQuotes[idx];
-                  return Card(
+            return Card(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     elevation: 2,
                     child: InkWell(
@@ -57,13 +57,13 @@ class QuotesPage extends StatelessWidget {
                           ),
                         );
                       },
-                      child: Padding(
+              child: Padding(
                         padding: const EdgeInsets.all(18),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
                                 Icon(Icons.pending_actions, color: AppTheme.successGreen),
                                 const SizedBox(width: 8),
                                 Text('Quote ID: ${q['quoteId']}', style: Theme.of(context).textTheme.bodyLarge),
@@ -73,7 +73,7 @@ class QuotesPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             Text('Customer: ${q['customer']}', style: Theme.of(context).textTheme.bodyMedium),
-                            Text('Service: ${q['serviceType']}', style: Theme.of(context).textTheme.bodyMedium),
+                            Text('Service: ${q['serviceType']?.toString() ?? '-'}', style: Theme.of(context).textTheme.bodyMedium),
                             Text('Status: ${q['status']}', style: Theme.of(context).textTheme.bodySmall),
                             const SizedBox(height: 12),
                             Row(
@@ -151,9 +151,9 @@ class _CustomerQuoteDetailsPage extends StatelessWidget {
                 );
               }
             },
-          ),
-        ],
-      ),
+                        ),
+                      ],
+                    ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -162,52 +162,52 @@ class _CustomerQuoteDetailsPage extends StatelessWidget {
             _sectionCard(
               context,
               title: 'Service Type',
-              children: [
-                _detailRow('Type', quote['serviceType'] ?? 'Courier'),
-                _detailRow('Status', quote['status'] ?? '-', color: _statusColor(quote['status'] ?? '')),
+                      children: [
+                _detailRow('Type', quote['serviceType']?.toString() ?? '-'),
+                _detailRow('Status', quote['status']?.toString() ?? '-', color: _statusColor(quote['status']?.toString() ?? '')),
               ],
             ),
             _sectionCard(
               context,
               title: 'Sender Information',
               children: [
-                _detailRow('Name', quote['sender'] ?? '-'),
-                _detailRow('Phone', quote['senderPhone'] ?? '-'),
-                _detailRow('Email', quote['senderEmail'] ?? '-'),
+                _detailRow('Name', quote['sender']?.toString() ?? '-'),
+                _detailRow('Phone', quote['senderPhone']?.toString() ?? '-'),
+                _detailRow('Email', quote['senderEmail']?.toString() ?? '-'),
               ],
             ),
             _sectionCard(
               context,
               title: 'Receiver Information',
               children: [
-                _detailRow('Name', quote['receiver'] ?? '-'),
-                _detailRow('Phone', quote['receiverPhone'] ?? '-'),
-                _detailRow('Email', quote['receiverEmail'] ?? '-'),
+                _detailRow('Name', quote['receiver']?.toString() ?? '-'),
+                _detailRow('Phone', quote['receiverPhone']?.toString() ?? '-'),
+                _detailRow('Email', quote['receiverEmail']?.toString() ?? '-'),
               ],
             ),
             _sectionCard(
               context,
               title: 'Pickup Details',
               children: [
-                _detailRow('Pickup Address', quote['pickupAddress'] ?? '-'),
+                _detailRow('Pickup Address', quote['pickupAddress']?.toString() ?? '-'),
               ],
             ),
             _sectionCard(
               context,
               title: 'Delivery Details',
               children: [
-                _detailRow('Delivery Address', quote['deliveryAddress'] ?? '-'),
+                _detailRow('Delivery Address', quote['deliveryAddress']?.toString() ?? '-'),
               ],
             ),
             if ((quote['businessName'] ?? '').isNotEmpty || (quote['businessType'] ?? '').isNotEmpty)
               _sectionCard(
                 context,
                 title: 'Business Info',
-                children: [
-                  _detailRow('Business Name', quote['businessName'] ?? '-'),
-                  _detailRow('Business Type', quote['businessType'] ?? '-'),
-                  _detailRow('Business Address', quote['businessAddress'] ?? '-'),
-                  _detailRow('Contact', quote['businessContact'] ?? '-'),
+                      children: [
+                  _detailRow('Business Name', quote['businessName']?.toString() ?? '-'),
+                  _detailRow('Business Type', quote['businessType']?.toString() ?? '-'),
+                  _detailRow('Business Address', quote['businessAddress']?.toString() ?? '-'),
+                  _detailRow('Contact', quote['businessContact']?.toString() ?? '-'),
                 ],
               ),
             if ((quote['paymentType'] ?? '').isNotEmpty || (quote['paymentProvider'] ?? '').isNotEmpty)
@@ -215,10 +215,10 @@ class _CustomerQuoteDetailsPage extends StatelessWidget {
                 context,
                 title: 'Payment Info',
                 children: [
-                  _detailRow('Payment Type', quote['paymentType'] ?? '-'),
-                  _detailRow('Provider', quote['paymentProvider'] ?? '-'),
-                  _detailRow('Account Number', quote['accountNumber'] ?? '-'),
-                  _detailRow('Account Name', quote['accountName'] ?? '-'),
+                  _detailRow('Payment Type', quote['paymentType']?.toString() ?? '-'),
+                  _detailRow('Provider', quote['paymentProvider']?.toString() ?? '-'),
+                  _detailRow('Account Number', quote['accountNumber']?.toString() ?? '-'),
+                  _detailRow('Account Name', quote['accountName']?.toString() ?? '-'),
                 ],
               ),
             if ((quote['instructions'] ?? '').isNotEmpty)
@@ -226,7 +226,7 @@ class _CustomerQuoteDetailsPage extends StatelessWidget {
                 context,
                 title: 'Additional Instructions',
                 children: [
-                  _detailRow('Instructions', quote['instructions'] ?? '-'),
+                  _detailRow('Instructions', quote['instructions']?.toString() ?? '-'),
                 ],
               ),
             const SizedBox(height: 18),
@@ -242,20 +242,20 @@ class _CustomerQuoteDetailsPage extends StatelessWidget {
             const SizedBox(height: 24),
             Center(
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
+                          style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.successGreen,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   textStyle: Theme.of(context).textTheme.titleMedium,
-                ),
-                onPressed: () {},
+                          ),
+                          onPressed: () {},
                 child: const Text('Click to Pay'),
+                        ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
-    );
+            );
   }
 
   Widget _sectionCard(BuildContext context, {required String title, required List<Widget> children}) {

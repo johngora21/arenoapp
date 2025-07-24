@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'edit_profile_page.dart';
+import 'package:flutter_map/flutter_map.dart' as flutter_map;
+import 'package:latlong2/latlong.dart' as latlng2;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'change_password_page.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class CustomerProfilePage extends StatefulWidget {
   const CustomerProfilePage({Key? key}) : super(key: key);
@@ -16,11 +23,99 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
   bool hasBusiness = false;
   bool isBusinessRegistered = false;
   final _personalFormKey = GlobalKey<FormState>();
-  String name = 'John Doe';
-  String email = 'johndoe@email.com';
-  String phone = '+255 123 456 789';
-  String location = 'Dar es Salaam';
   bool isEditingPersonal = false;
+  Map<String, dynamic>? userData;
+  bool isLoading = true;
+  String? error;
+  String name = '';
+  String email = '';
+  String phone = '';
+  String location = '';
+  String businessAddress = '-';
+  bool isFetchingBusinessAddress = false;
+  String? photoUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchBusinessAddressFromCoords() async {
+    if (userData == null || userData?['businessLocation'] == null) return;
+    final loc = userData?['businessLocation'] as String;
+    if (!loc.contains('Lat:')) return;
+    try {
+      final parts = loc.split(',');
+      final lat = double.parse(parts[0].split(':')[1].trim());
+      final lng = double.parse(parts[1].split(':')[1].trim());
+      setState(() { isFetchingBusinessAddress = true; });
+      final url = Uri.parse('https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lng');
+      final response = await http.get(url, headers: {'User-Agent': 'arenoapp/1.0'});
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          businessAddress = data['display_name'] ?? '-';
+          isFetchingBusinessAddress = false;
+        });
+      } else {
+        setState(() { businessAddress = '-'; isFetchingBusinessAddress = false; });
+      }
+    } catch (e) {
+      setState(() { businessAddress = '-'; isFetchingBusinessAddress = false; });
+    }
+  }
+
+  Future<void> _fetchUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() {
+        error = 'Not logged in.';
+        isLoading = false;
+      });
+      return;
+    }
+    final doc = await FirebaseFirestore.instance.collection('customers').doc(user.uid).get();
+    if (!doc.exists) {
+      setState(() {
+        error = 'User not found.';
+        isLoading = false;
+      });
+      return;
+    }
+    setState(() {
+      userData = doc.data();
+      print('Fetched userData: ' + userData.toString());
+      var n = (userData?['name'] ?? '').toString();
+      name = n.isNotEmpty ? n : '-';
+      var e = (userData?['email'] ?? '').toString();
+      email = e.isNotEmpty ? e : '-';
+      var p = (userData?['phone'] ?? '').toString();
+      phone = p.isNotEmpty ? p : '-';
+      var l = (userData?['location'] ?? '').toString();
+      location = l.isNotEmpty ? l : '-';
+      photoUrl = userData?['photoUrl'] as String?;
+      isLoading = false;
+    });
+    await _fetchBusinessAddressFromCoords();
+  }
+
+  Future<void> _pickAndUploadProfilePhoto() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (picked == null) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final ref = FirebaseStorage.instance.ref().child('profile_photos/${user.uid}.jpg');
+    await ref.putData(await picked.readAsBytes());
+    final url = await ref.getDownloadURL();
+    await FirebaseFirestore.instance.collection('customers').doc(user.uid).update({'photoUrl': url});
+    setState(() {
+      photoUrl = url;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile photo updated!')));
+  }
+
   void _showBusinessRegistrationForm(BuildContext context) {
     final _formKey = GlobalKey<FormState>();
     String businessName = '';
@@ -103,6 +198,18 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Profile'), backgroundColor: AppTheme.successGreen),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Profile'), backgroundColor: AppTheme.successGreen),
+        body: Center(child: Text(error!, style: const TextStyle(color: Colors.red))),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
@@ -120,16 +227,23 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                   CircleAvatar(
                     radius: 48,
                     backgroundColor: AppTheme.slate200,
-                    backgroundImage: null, // TODO: Add image provider
-                    child: Icon(Icons.person, size: 48, color: AppTheme.slate400),
+                    backgroundImage: (photoUrl != null && photoUrl!.isNotEmpty)
+                        ? NetworkImage(photoUrl!)
+                        : null,
+                    child: (photoUrl == null || photoUrl!.isEmpty)
+                        ? Icon(Icons.person, size: 48, color: AppTheme.slate400)
+                        : null,
                   ),
                   Positioned(
                     bottom: 0,
                     right: 0,
+                    child: GestureDetector(
+                      onTap: _pickAndUploadProfilePhoto,
                     child: CircleAvatar(
                       radius: 16,
                       backgroundColor: Colors.white,
-                      child: Icon(Icons.edit, size: 18, color: AppTheme.successGreen),
+                        child: Icon(Icons.edit, size: 18, color: AppTheme.successGreen),
+                      ),
                     ),
                   ),
                 ],
@@ -165,7 +279,9 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
             ),
             const SizedBox(height: 24),
             if (!isEditingPersonal) ...[
-              // VIEW MODE: All details in read-only mode
+              if (name == '-' && email == '-' && phone == '-' && location == '-')
+                const Text('No profile data found.')
+              else
               Card(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 margin: const EdgeInsets.only(bottom: 24),
@@ -184,7 +300,7 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                   ),
                 ),
               ),
-              if (hasBusiness) ...[
+              if ((userData?['businessName'] ?? '').toString().isNotEmpty || (userData?['businessType'] ?? '').toString().isNotEmpty) ...[
                 Card(
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   margin: const EdgeInsets.only(bottom: 24),
@@ -195,18 +311,17 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                       children: [
                         Text('Business Details', style: AppTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.slate900)),
                         const SizedBox(height: 16),
-                        _profileField('Business Name', 'Acme Ltd'),
-                        _profileField('Business Type', 'Logistics'),
-                        _profileField('Business Address', '123 Main St, Dar es Salaam'),
-                        _profileField('Contact', '+255 123 456 789'),
-                        _profileField('TIN Number', '123456789'),
-                        _profileField('License', 'license.pdf'),
-                        _profileField('Location', 'Lat: -6.7924, Lng: 39.2083'),
+                        _profileField('Business Name', userData?['businessName']?.toString() ?? '-'),
+                        _profileField('Business Type', userData?['businessType']?.toString() ?? '-'),
+                        _profileField('Business Address', isFetchingBusinessAddress ? 'Loading address...' : businessAddress),
+                        _profileField('Contact', userData?['businessContact']?.toString() ?? '-'),
+                        _profileField('TIN Number', userData?['tinNumber']?.toString() ?? '-'),
                       ],
                     ),
                   ),
                 ),
               ],
+              if ((userData?['paymentType'] ?? '').toString().isNotEmpty || (userData?['paymentProvider'] ?? '').toString().isNotEmpty) ...[
               Card(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 margin: const EdgeInsets.only(bottom: 24),
@@ -217,11 +332,15 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                     children: [
                       Text('Payment Methods', style: AppTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.slate900)),
                       const SizedBox(height: 16),
-                      Text('Payment method on file', style: AppTheme.bodyMedium?.copyWith(color: AppTheme.slate900)),
+                        _profileField('Payment Type', userData?['paymentType']?.toString() ?? '-'),
+                        _profileField('Provider', userData?['paymentProvider']?.toString() ?? '-'),
+                        _profileField('Account Number', userData?['accountNumber']?.toString() ?? '-'),
+                        _profileField('Account Name', userData?['accountName']?.toString() ?? '-'),
                     ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ] else ...[
               // EDIT MODE: All details as input fields
               Text('Personal Information', style: AppTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: AppTheme.slate900)),
@@ -267,9 +386,19 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                               backgroundColor: AppTheme.successGreen,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                             ),
-                            onPressed: () {
+                            onPressed: () async {
                               if (_personalFormKey.currentState!.validate()) {
+                                final user = FirebaseAuth.instance.currentUser;
+                                if (user != null) {
+                                  await FirebaseFirestore.instance.collection('customers').doc(user.uid).update({
+                                    'name': name,
+                                    'email': email,
+                                    'phone': phone,
+                                    'location': location,
+                                  });
+                                  await _fetchUserData();
                                 setState(() => isEditingPersonal = false);
+                                }
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Personal info saved!')),
                                 );
@@ -277,6 +406,19 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                             },
                             child: const Text('Save'),
                           ),
+                        ),
+                        const SizedBox(width: 12),
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: AppTheme.primaryOrange),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (context) => const ChangePasswordPage()),
+                            );
+                          },
+                          child: const Text('Update Password'),
                         ),
                       ],
                     ),
@@ -306,7 +448,15 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: BusinessRegistrationForm(),
+                    child: BusinessRegistrationForm(
+                      onSaved: _fetchUserData,
+                      initialBusinessName: userData?['businessName'] ?? '',
+                      initialBusinessType: userData?['businessType'] ?? '',
+                      initialBusinessAddress: userData?['businessAddress'] ?? '',
+                      initialBusinessContact: userData?['businessContact'] ?? '',
+                      initialTinNumber: userData?['tinNumber'] ?? '',
+                      initialBusinessLocation: userData?['businessLocation'] ?? '',
+                    ),
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -317,56 +467,11 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
-                  child: PaymentMethodForm(),
-                ),
-              ),
-            ],
-            if (hasBusiness) ...[
-              const SizedBox(height: 28),
-              // 4. Logistics Dashboard (for partners)
-              Text('Logistics Dashboard', style: AppTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: AppTheme.slate900)),
-              const SizedBox(height: 12),
-              Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Shipments Managed: 12'),
-                      Text('Earnings: TZS 1,200,000'),
-                      Text('Performance: Excellent'),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.successGreen,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            ),
-                            onPressed: () {},
-                            child: const Text('View Shipments'),
-                          ),
-                          ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.successGreen,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            ),
-                            onPressed: () {},
-                            child: const Text('Request Pickup'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                  child: PaymentMethodForm(onSaved: _fetchUserData),
                 ),
               ),
             ],
             const SizedBox(height: 28),
-            // 5. General Actions
-            Text('Account Actions', style: AppTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: AppTheme.slate900)),
-            const SizedBox(height: 12),
           ],
         ),
       ),
@@ -411,20 +516,59 @@ class _CustomerProfilePageState extends State<CustomerProfilePage> {
 }
 
 class BusinessRegistrationForm extends StatefulWidget {
+  final VoidCallback? onSaved;
+  final String initialBusinessName;
+  final String initialBusinessType;
+  final String initialBusinessAddress;
+  final String initialBusinessContact;
+  final String initialTinNumber;
+  final String initialBusinessLocation;
+  const BusinessRegistrationForm({
+    this.onSaved,
+    this.initialBusinessName = '',
+    this.initialBusinessType = '',
+    this.initialBusinessAddress = '',
+    this.initialBusinessContact = '',
+    this.initialTinNumber = '',
+    this.initialBusinessLocation = '',
+    Key? key,
+  }) : super(key: key);
   @override
   State<BusinessRegistrationForm> createState() => _BusinessRegistrationFormState();
 }
 
 class _BusinessRegistrationFormState extends State<BusinessRegistrationForm> {
   final _formKey = GlobalKey<FormState>();
-  String businessName = '';
-  String businessType = '';
-  String businessAddress = '';
+  late String businessName;
+  late String businessType;
+  late String businessAddress;
   String? licenseFileName;
   String? tinFileName;
-  LatLng? businessLocation;
-  String businessContact = '';
+  latlng2.LatLng? businessLocation;
+  late String businessContact;
+  late String tinNumber;
   bool isRegistered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    businessName = widget.initialBusinessName;
+    businessType = widget.initialBusinessType;
+    businessAddress = widget.initialBusinessAddress;
+    businessContact = widget.initialBusinessContact;
+    tinNumber = widget.initialTinNumber;
+    // Parse businessLocation from string if available
+    if (widget.initialBusinessLocation.isNotEmpty && widget.initialBusinessLocation.contains('Lat:')) {
+      final parts = widget.initialBusinessLocation.split(',');
+      try {
+        final lat = double.parse(parts[0].split(':')[1].trim());
+        final lng = double.parse(parts[1].split(':')[1].trim());
+        businessLocation = latlng2.LatLng(lat, lng);
+      } catch (_) {
+        businessLocation = null;
+      }
+    }
+  }
 
   InputDecoration _inputDecoration(String label, String hint) {
     return InputDecoration(
@@ -468,10 +612,10 @@ class _BusinessRegistrationFormState extends State<BusinessRegistrationForm> {
             decoration: _inputDecoration('Business Location', 'Tap to pick location').copyWith(
               suffixIcon: Icon(Icons.location_on, color: AppTheme.successGreen),
             ),
-            controller: TextEditingController(text: businessLocation != null ? 'Lat: ${businessLocation!.latitude}, Lng: ${businessLocation!.longitude}' : ''),
+            controller: TextEditingController(text: businessLocation != null ? 'Lat:  ${businessLocation!.latitude}, Lng:  ${businessLocation!.longitude}' : ''),
             validator: (v) => businessLocation == null ? 'Pick location' : null,
             onTap: () async {
-              LatLng? picked = await showDialog(
+              latlng2.LatLng? picked = await showDialog(
                 context: context,
                 builder: (context) => _MapPickerDialog(initial: businessLocation),
               );
@@ -481,14 +625,15 @@ class _BusinessRegistrationFormState extends State<BusinessRegistrationForm> {
             },
           ),
           const SizedBox(height: 12),
-          // TIN number field
+          // TIN number field (actual number)
           TextFormField(
+            initialValue: tinNumber,
             decoration: _inputDecoration('TIN Number', 'Enter TIN number'),
             validator: (v) => v == null || v.isEmpty ? 'Enter TIN number' : null,
-            onChanged: (v) => setState(() => businessContact = v),
+            onChanged: (v) => setState(() => tinNumber = v),
           ),
           const SizedBox(height: 12),
-          // TIN certificate upload
+          // TIN certificate upload (file name only, not shown in view)
           Text('TIN Certificate', style: AppTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500, color: AppTheme.slate900)),
           const SizedBox(height: 6),
           OutlinedButton.icon(
@@ -541,12 +686,27 @@ class _BusinessRegistrationFormState extends State<BusinessRegistrationForm> {
               backgroundColor: AppTheme.successGreen,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            onPressed: () {
+            onPressed: () async {
               if (_formKey.currentState!.validate()) {
+                final user = FirebaseAuth.instance.currentUser;
+                if (user != null) {
+                  await FirebaseFirestore.instance.collection('customers').doc(user.uid).update({
+                    'businessName': businessName,
+                    'businessType': businessType,
+                    'businessAddress': businessAddress,
+                    'businessContact': businessContact,
+                    'tinNumber': tinNumber, // Save the actual number
+                    'tinCertificateFile': tinFileName ?? '', // Save the file name separately
+                    'license': licenseFileName ?? '',
+                    'businessLocation': businessLocation != null ? 'Lat: ${businessLocation!.latitude}, Lng: ${businessLocation!.longitude}' : '',
+                  });
+                }
                 setState(() => isRegistered = true);
+                if (widget.onSaved != null) widget.onSaved!();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Business registered!')),
                 );
+                Navigator.of(context).pop();
               }
             },
             child: Text(isRegistered ? 'Update Business' : 'Register Business'),
@@ -558,6 +718,8 @@ class _BusinessRegistrationFormState extends State<BusinessRegistrationForm> {
 }
 
 class PaymentMethodForm extends StatefulWidget {
+  final VoidCallback? onSaved;
+  const PaymentMethodForm({this.onSaved, Key? key}) : super(key: key);
   @override
   State<PaymentMethodForm> createState() => _PaymentMethodFormState();
 }
@@ -645,11 +807,22 @@ class _PaymentMethodFormState extends State<PaymentMethodForm> {
               backgroundColor: AppTheme.primaryOrange,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
-            onPressed: () {
+            onPressed: () async {
               if (_formKey.currentState!.validate()) {
+                final user = FirebaseAuth.instance.currentUser;
+                if (user != null) {
+                  await FirebaseFirestore.instance.collection('customers').doc(user.uid).update({
+                    'paymentType': paymentType,
+                    'paymentProvider': provider,
+                    'accountNumber': accountNumber,
+                    'accountName': accountName,
+                  });
+                }
+                if (widget.onSaved != null) widget.onSaved!();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Payment method saved!')),
                 );
+                Navigator.of(context).pop();
               }
             },
             child: const Text('Save Payment Method'),
@@ -662,18 +835,18 @@ class _PaymentMethodFormState extends State<PaymentMethodForm> {
 
 // Google Map Picker Dialog
 class _MapPickerDialog extends StatefulWidget {
-  final LatLng? initial;
+  final latlng2.LatLng? initial;
   const _MapPickerDialog({this.initial});
   @override
   State<_MapPickerDialog> createState() => _MapPickerDialogState();
 }
 
 class _MapPickerDialogState extends State<_MapPickerDialog> {
-  late LatLng _selected;
+  late latlng2.LatLng _selected;
   @override
   void initState() {
     super.initState();
-    _selected = widget.initial ?? const LatLng(-6.7924, 39.2083); // Default Dar es Salaam
+    _selected = widget.initial ?? latlng2.LatLng(-6.7924, 39.2083); // Default Dar es Salaam
   }
   @override
   Widget build(BuildContext context) {
@@ -692,19 +865,28 @@ class _MapPickerDialogState extends State<_MapPickerDialog> {
             SizedBox(
               width: 320,
               height: 320,
-              child: GoogleMap(
-                initialCameraPosition: CameraPosition(target: _selected, zoom: 15),
-                markers: {
-                  Marker(
-                    markerId: const MarkerId('selected'),
-                    position: _selected,
-                    draggable: true,
-                    onDragEnd: (pos) => setState(() => _selected = pos),
+              child: flutter_map.FlutterMap(
+                options: flutter_map.MapOptions(
+                  initialCenter: _selected,
+                  initialZoom: 15,
+                  onTap: (tapPos, latlng) => setState(() => _selected = latlng),
+                ),
+                children: [
+                  flutter_map.TileLayer(
+                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.arenoapp',
                   ),
-                },
-                onTap: (latlng) => setState(() => _selected = latlng),
-                myLocationButtonEnabled: true,
-                zoomControlsEnabled: true,
+                  flutter_map.MarkerLayer(
+                    markers: [
+                      flutter_map.Marker(
+                        width: 40,
+                        height: 40,
+                        point: _selected,
+                        child: const Icon(Icons.location_pin, color: Colors.red, size: 40),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
             Padding(

@@ -28,12 +28,12 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
         decoration: const BoxDecoration(
           gradient: AppTheme.slateGradient,
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
           child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                 Row(
                   children: [
                     Expanded(
@@ -62,9 +62,9 @@ class _AgentHomeScreenState extends State<AgentHomeScreen> {
                         onPressed: () => setState(() => selectedTab = 'Payments'),
                         child: const Text('Payments'),
                       ),
-                    ),
-                  ],
-                ),
+                  ),
+                        ],
+                      ),
                 const SizedBox(height: 18),
                 // Remove the time frame dropdown from Payments section
                 if (selectedTab == 'Shipments') ...[
@@ -209,10 +209,10 @@ class _NotificationCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 0,
       margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
+        child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         child: Row(
-          children: [
+            children: [
             const Icon(Icons.info_outline, color: AppTheme.primaryOrange, size: 28),
             const SizedBox(width: 16),
             Expanded(

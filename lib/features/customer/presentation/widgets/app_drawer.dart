@@ -54,10 +54,8 @@ class AppDrawer extends StatelessWidget {
     final quotesStream = user != null
       ? FirebaseFirestore.instance.collection('quotes').where('userId', isEqualTo: user.uid).snapshots()
       : const Stream<QuerySnapshot<Object?>>.empty();
-    // For demonstration, set isLoggedIn to false to show the login button
-    final bool isLoggedIn = false;
-    final String userName = 'John Doe';
-    final String userInitials = 'JD';
+    final String userName = user?.displayName ?? user?.email ?? 'Guest';
+    final String userInitials = userName.isNotEmpty ? userName.trim().split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase() : 'G';
     return Drawer(
       child: Container(
         decoration: const BoxDecoration(
@@ -75,38 +73,31 @@ class AppDrawer extends StatelessWidget {
                 ),
               ),
               padding: const EdgeInsets.only(left: 16, top: 32, bottom: 24, right: 16),
-              child: GestureDetector(
-                onTap: () {
-                  if (!isLoggedIn) {
-                    Navigator.of(context).pushNamed('/login');
-                  }
-                },
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: profileSize / 2,
-                      backgroundColor: AppTheme.successGreen,
-                      child: Text(
-                        userInitials,
-                        style: TextStyle(
-                          color: AppTheme.primaryOrange,
-                          fontWeight: FontWeight.bold,
-                          fontSize: profileSize / 2.2,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      isLoggedIn ? userName : 'Login',
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: profileSize / 2,
+                    backgroundColor: AppTheme.successGreen,
+                    child: Text(
+                      userInitials,
                       style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                        letterSpacing: 0.5,
+                        color: AppTheme.primaryOrange,
+                        fontWeight: FontWeight.bold,
+                        fontSize: profileSize / 2.2,
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    userName,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
               ),
             ),
             ListTile(

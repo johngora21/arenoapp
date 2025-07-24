@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../shared/providers/auth_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -139,9 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           textStyle: Theme.of(context).textTheme.titleMedium,
                           backgroundColor: Colors.white,
                                 ),
-                        onPressed: () {
-                          // TODO: Implement Google sign-in logic
-                        },
+                        onPressed: _isLoading ? null : _signInWithGoogle,
                         child: const Center(child: Text('Login with Google')),
                         ),
                     ),
@@ -219,11 +222,82 @@ class _LoginScreenState extends State<LoginScreen> {
   void _onLogin() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() => _isLoading = false);
-    // TODO: Implement real login logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Login successful!')),
+    try {
+      final container = ProviderScope.containerOf(context);
+      await container.read(authProvider.notifier).signIn(
+        _emailController.text.trim(),
+        _passwordController.text,
+      );
+      final authState = container.read(authProvider);
+      if (authState.user != null && authState.userType == 'customer') {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Login successful!')),
+          );
+          Navigator.of(context).pushReplacementNamed('/customer_home');
+        }
+      } else if (authState.error != null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(authState.error!)),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login failed: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() => _isLoading = true);
+    GoogleSignInAccount? googleUser;
+    try {
+      googleUser = await GoogleSignIn.instance.authenticate();
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google sign in failed: $e'), backgroundColor: AppTheme.errorRed),
+        );
+      }
+      return;
+    }
+    if (googleUser == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+    final credential = GoogleAuthProvider.credential(
+      idToken: googleAuth.idToken,
     );
+    final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+    final user = userCredential.user;
+    if (user != null) {
+      final crmRef = FirebaseFirestore.instance.collection('CRM');
+      final doc = await crmRef.doc(user.uid).get();
+      if (!doc.exists) {
+        await crmRef.doc(user.uid).set({
+          'uid': user.uid,
+          'name': user.displayName ?? '',
+          'email': user.email ?? '',
+          'phone': '',
+          'userType': 'customer',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Signed in with Google!'), backgroundColor: AppTheme.successGreen),
+        );
+        Navigator.of(context).pushReplacementNamed('/customer_home');
+      }
+    }
+    setState(() => _isLoading = false);
   }
 }

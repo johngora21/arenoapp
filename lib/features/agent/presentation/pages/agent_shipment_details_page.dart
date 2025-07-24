@@ -264,15 +264,15 @@ class _AgentShipmentDetailsPageState extends State<AgentShipmentDetailsPage> {
                     child: isLoading
                         ? const CircularProgressIndicator()
                         : ElevatedButton.icon(
-                            icon: const Icon(Icons.verified),
+                      icon: const Icon(Icons.verified),
                             label: const Text('Approve'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.successGreen,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                              textStyle: Theme.of(context).textTheme.titleMedium,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.successGreen,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                        textStyle: Theme.of(context).textTheme.titleMedium,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
                             onPressed: () async {
                               setState(() { isLoading = true; });
                               await Future.delayed(const Duration(seconds: 1));
@@ -286,7 +286,7 @@ class _AgentShipmentDetailsPageState extends State<AgentShipmentDetailsPage> {
                                 SnackBar(content: Text('Shipment status updated to $newStatus.')),
                               );
                             },
-                          ),
+                    ),
                   ),
                 const SizedBox(height: 24),
                 // 5. Comment box

@@ -38,7 +38,7 @@ class _AgentProfilePageState extends State<AgentProfilePage> {
             title: const Text('Agent Profile'),
             centerTitle: false,
             backgroundColor: AppTheme.successGreen,
-            elevation: 0,
+        elevation: 0,
             pinned: true,
             floating: false,
             expandedHeight: 0,

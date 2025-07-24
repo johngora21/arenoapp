@@ -58,8 +58,8 @@ class ShipmentDetailsPage extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _sectionCard(
               context,
@@ -152,11 +152,11 @@ class ShipmentDetailsPage extends StatelessWidget {
                 ),
                 onPressed: () {},
                 child: const Text('Click to Pay'),
-              ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 

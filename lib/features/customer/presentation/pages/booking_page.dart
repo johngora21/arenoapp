@@ -118,13 +118,111 @@ class _BookingPageState extends State<BookingPage> {
       );
       return;
     }
-    // Example: Only basic fields, expand as needed
+    Map<String, dynamic> contactInfo;
+    if (_serviceType == 'courier') {
+      contactInfo = {
+        'contactPerson': _senderNameController.text.trim(),
+        'email': _senderEmailController.text.trim(),
+        'phone': _senderPhoneController.text.trim(),
+      };
+    } else if (_serviceType == 'moving') {
+      contactInfo = {
+        'contactPerson': _movingFullNameController.text.trim(),
+        'email': _movingEmailController.text.trim(),
+        'phone': _movingPhoneController.text.trim(),
+      };
+    } else if (_serviceType == 'freight') {
+      contactInfo = {
+        'contactPerson': _freightContactPersonController.text.trim(),
+        'email': _freightEmailController.text.trim(),
+        'phone': _freightPhoneController.text.trim(),
+      };
+    } else {
+      contactInfo = {
+        'contactPerson': '',
+        'email': '',
+        'phone': '',
+      };
+    }
+    // Collect all package items
+    final packageItems = _packageItems.map((item) => {
+      'category': item.category,
+      'name': item.nameController.text.trim(),
+      'quantity': item.quantityController.text.trim(),
+      'value': item.valueController.text.trim(),
+    }).toList();
     final data = {
       'userId': user.uid,
       'serviceType': _serviceType,
+      'courierType': _courierType,
+      'movingType': _movingType,
+      'freightType': _freightType,
       'status': 'pending',
       'createdAt': FieldValue.serverTimestamp(),
-      // Add more fields from the form as needed
+      'contactInfo': contactInfo,
+      'sender': {
+        'name': _senderNameController.text.trim(),
+        'phone': _senderPhoneController.text.trim(),
+        'email': _senderEmailController.text.trim(),
+      },
+      'receiver': {
+        'name': _receiverNameController.text.trim(),
+        'phone': _receiverPhoneController.text.trim(),
+        'email': _receiverEmailController.text.trim(),
+      },
+      'pickupAddress': _pickupController.text.trim(),
+      'pickupLatLng': _pickupLatLng != null ? {
+        'lat': _pickupLatLng!.latitude,
+        'lng': _pickupLatLng!.longitude,
+      } : null,
+      'deliveryAddress': _deliveryController.text.trim(),
+      'deliveryLatLng': _deliveryLatLng != null ? {
+        'lat': _deliveryLatLng!.latitude,
+        'lng': _deliveryLatLng!.longitude,
+      } : null,
+      'packageName': _packageNameController.text.trim(),
+      'packageItems': packageItems,
+      'packageDescription': _packageDescriptionController.text.trim(),
+      'businessName': _businessNameController.text.trim(),
+      'isExpress': _isExpress,
+      'isDoorToDoor': _isDoorToDoor,
+      // Moving
+      'movingBusinessName': _movingBusinessNameController.text.trim(),
+      'movingDate': _movingDateController.text.trim(),
+      'movingPickupLatLng': _movingPickupLatLng != null ? {
+        'lat': _movingPickupLatLng!.latitude,
+        'lng': _movingPickupLatLng!.longitude,
+      } : null,
+      'movingDeliveryLatLng': _movingDeliveryLatLng != null ? {
+        'lat': _movingDeliveryLatLng!.latitude,
+        'lng': _movingDeliveryLatLng!.longitude,
+      } : null,
+      'itemsList': _itemsListController.text.trim(),
+      'movingSpecialRequests': _movingSpecialRequestsController.text.trim(),
+      'movingAdditional': _movingAdditional.toList(),
+      // Freight
+      'freightBusinessName': _freightBusinessNameController.text.trim(),
+      'freightContactPerson': _freightContactPersonController.text.trim(),
+      'freightPhone': _freightPhoneController.text.trim(),
+      'freightEmail': _freightEmailController.text.trim(),
+      'freightPickupDate': _freightPickupDateController.text.trim(),
+      'freightDeliveryDate': _freightDeliveryDateController.text.trim(),
+      'freightPickupLatLng': _freightPickupLatLng != null ? {
+        'lat': _freightPickupLatLng!.latitude,
+        'lng': _freightPickupLatLng!.longitude,
+      } : null,
+      'freightDeliveryLatLng': _freightDeliveryLatLng != null ? {
+        'lat': _freightDeliveryLatLng!.latitude,
+        'lng': _freightDeliveryLatLng!.longitude,
+      } : null,
+      'freightCargoDescription': _freightCargoDescriptionController.text.trim(),
+      'freightQuantity': _freightQuantityController.text.trim(),
+      'freightWeight': _freightWeightController.text.trim(),
+      'freightVolume': _freightVolumeController.text.trim(),
+      'freightSpecialHandling': _freightSpecialHandling.toList(),
+      'freightSpecialHandlingDesc': _freightSpecialHandlingController.text.trim(),
+      'freightOtherRequests': _freightOtherRequestsController.text.trim(),
+      'freightType': _freightType,
     };
     await quotesRef.add(data);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -172,16 +270,6 @@ class _BookingPageState extends State<BookingPage> {
                     child: const Text('Submit Request'),
                   ),
                 ),
-                if (myQuotes.isNotEmpty) ...[
-                  const SizedBox(height: 32),
-                  Text('My Recent Quotes/Bookings:', style: Theme.of(context).textTheme.titleMedium),
-                  ...myQuotes.map((q) => Card(
-                    child: ListTile(
-                      title: Text('Type:  ${q['serviceType']}'),
-                      subtitle: Text('Status:  ${q['status']}'),
-                    ),
-                  )),
-                ],
               ],
             ),
           ),
@@ -407,7 +495,17 @@ class _BookingPageState extends State<BookingPage> {
             (latlng) => setState(() => _movingDeliveryLatLng = latlng),
             label: 'Drop-off',
           ),
-          _styledTextField(_movingDateController, 'Preferred Moving Date', Icons.calendar_today),
+          _styledTextField(_movingDateController, 'Preferred Moving Date', Icons.calendar_today, readOnly: true, onTap: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: DateTime.now(),
+              firstDate: DateTime.now(),
+              lastDate: DateTime.now().add(Duration(days: 365)),
+            );
+            if (picked != null) {
+              _movingDateController.text = picked.toIso8601String().split('T').first;
+            }
+          }),
           _sectionHeader('Items to Be Moved'),
           _styledTextField(_itemsListController, 'List Items Manually', Icons.list),
           _fileUploadWidget(_movingFiles, (files) => setState(() => _movingFiles = files)),
@@ -448,8 +546,28 @@ class _BookingPageState extends State<BookingPage> {
             (latlng) => setState(() => _freightDeliveryLatLng = latlng),
             label: 'Destination',
           ),
-          _styledTextField(_freightPickupDateController, 'Expected Pickup Date', Icons.calendar_today),
-          _styledTextField(_freightDeliveryDateController, 'Expected Delivery Date', Icons.calendar_today),
+          _styledTextField(_freightPickupDateController, 'Expected Pickup Date', Icons.calendar_today, readOnly: true, onTap: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: DateTime.now(),
+              firstDate: DateTime.now(),
+              lastDate: DateTime.now().add(Duration(days: 365)),
+            );
+            if (picked != null) {
+              _freightPickupDateController.text = picked.toIso8601String().split('T').first;
+            }
+          }),
+          _styledTextField(_freightDeliveryDateController, 'Expected Delivery Date', Icons.calendar_today, readOnly: true, onTap: () async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: DateTime.now(),
+              firstDate: DateTime.now(),
+              lastDate: DateTime.now().add(Duration(days: 365)),
+            );
+            if (picked != null) {
+              _freightDeliveryDateController.text = picked.toIso8601String().split('T').first;
+            }
+          }),
           _sectionHeader('Cargo Details'),
           _styledTextField(_freightCargoDescriptionController, 'Cargo Description', Icons.description),
           _styledTextField(_freightQuantityController, 'Quantity', Icons.confirmation_number),
@@ -488,11 +606,13 @@ class _BookingPageState extends State<BookingPage> {
     );
   }
 
-  Widget _styledTextField(TextEditingController controller, String label, IconData icon, {String? hint}) {
+  Widget _styledTextField(TextEditingController controller, String label, IconData icon, {String? hint, bool readOnly = false, VoidCallback? onTap}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: TextField(
         controller: controller,
+        readOnly: readOnly,
+        onTap: onTap,
         style: Theme.of(context).textTheme.bodyLarge,
         decoration: InputDecoration(
           labelText: label,

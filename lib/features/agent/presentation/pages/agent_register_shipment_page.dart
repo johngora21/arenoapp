@@ -7,6 +7,8 @@ import 'package:latlong2/latlong.dart' as latlng2;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../widgets/agent_drawer.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AgentRegisterShipmentPage extends StatefulWidget {
   const AgentRegisterShipmentPage({Key? key}) : super(key: key);
@@ -38,6 +40,12 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
   List<Map<String, dynamic>> myQuotes = [];
   Stream<QuerySnapshot>? quotesStream;
   List<_PackageItem> _packageItems = [ _PackageItem() ];
+  final TextEditingController _pickupSearchController = TextEditingController();
+  final TextEditingController _deliverySearchController = TextEditingController();
+  List<Map<String, dynamic>> _pickupSearchResults = [];
+  List<Map<String, dynamic>> _deliverySearchResults = [];
+  bool _isPickupSearching = false;
+  bool _isDeliverySearching = false;
 
   @override
   void initState() {
@@ -46,7 +54,7 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
     if (user != null) {
       quotesStream = quotesRef.where('userId', isEqualTo: user.uid).snapshots();
       quotesStream!.listen((snapshot) {
-        setState(() {
+    setState(() {
           myQuotes = snapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
         });
       });
@@ -63,14 +71,72 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
     }
     final data = {
       'userId': user.uid,
-      'serviceType': 'courier',
+      'serviceType': _courierType.isNotEmpty ? _courierType : 'courier',
       'status': 'pending',
       'createdAt': FieldValue.serverTimestamp(),
+      'contactInfo': {
+        'contactPerson': _senderNameController.text.trim(),
+        'email': _senderEmailController.text.trim(),
+        'phone': _senderPhoneController.text.trim(),
+      },
+      // Add other fields as needed
     };
     await quotesRef.add(data);
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Booking/Quote submitted!')),
     );
+  }
+
+  Future<void> _searchPickupLocation(String query) async {
+    if (query.isEmpty) {
+      setState(() => _pickupSearchResults = []);
+      return;
+    }
+    setState(() => _isPickupSearching = true);
+    final url = Uri.parse('https://nominatim.openstreetmap.org/search?q=$query&format=json&addressdetails=1&limit=5');
+    final response = await http.get(url, headers: {'User-Agent': 'arenoapp/1.0'});
+    if (response.statusCode == 200) {
+      final List data = json.decode(response.body);
+      setState(() {
+        _pickupSearchResults = data.map<Map<String, dynamic>>((item) => {
+          'display_name': item['display_name'],
+          'lat': item['lat'],
+          'lon': item['lon'],
+        }).toList();
+        _isPickupSearching = false;
+      });
+    } else {
+      setState(() {
+        _pickupSearchResults = [];
+        _isPickupSearching = false;
+      });
+    }
+  }
+
+  Future<void> _searchDeliveryLocation(String query) async {
+    if (query.isEmpty) {
+      setState(() => _deliverySearchResults = []);
+      return;
+    }
+    setState(() => _isDeliverySearching = true);
+    final url = Uri.parse('https://nominatim.openstreetmap.org/search?q=$query&format=json&addressdetails=1&limit=5');
+    final response = await http.get(url, headers: {'User-Agent': 'arenoapp/1.0'});
+    if (response.statusCode == 200) {
+      final List data = json.decode(response.body);
+      setState(() {
+        _deliverySearchResults = data.map<Map<String, dynamic>>((item) => {
+          'display_name': item['display_name'],
+          'lat': item['lat'],
+          'lon': item['lon'],
+        }).toList();
+        _isDeliverySearching = false;
+      });
+    } else {
+    setState(() {
+        _deliverySearchResults = [];
+        _isDeliverySearching = false;
+      });
+    }
   }
 
   @override
@@ -112,8 +178,17 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
                     Text('My Recent Quotes/Bookings:', style: Theme.of(context).textTheme.titleMedium),
                     ...myQuotes.map((q) => Card(
                       child: ListTile(
-                        title: Text('Type: ${q['serviceType']}'),
-                        subtitle: Text('Status: ${q['status']}'),
+                        title: Text((q['serviceType'] ?? '-').toString()),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Status: ${(q['status'] ?? '-').toString()}'),
+                            Text('Client: ${((q['contactInfo']?['contactPerson']) ?? '-').toString()}'),
+                            Text('Email: ${((q['contactInfo']?['email']) ?? '-').toString()}'),
+                            Text('Phone: ${((q['contactInfo']?['phone']) ?? '-').toString()}'),
+                          ],
+                        ),
+                        trailing: Text((q['quoteNumber'] ?? '-').toString()),
                       ),
                     )),
                   ],
@@ -178,11 +253,85 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
       _styledTextField(_receiverPhoneController, 'Phone Number *', Icons.phone, hint: '+255 XXX XXX XXX'),
       _styledTextField(_receiverEmailController, 'Email Address', Icons.email, hint: 'receiver@email.com'),
       _sectionHeader('Pickup Details'),
-      _styledTextField(_pickupController, 'Pickup Address *', Icons.location_on, hint: 'Enter pickup address or select on map'),
-      _mapPickerButton(_pickupLatLng, (latlng) => setState(() => _pickupLatLng = latlng), label: 'Pickup'),
+      TextField(
+        controller: _pickupSearchController,
+        decoration: InputDecoration(
+          labelText: 'Pickup Address *',
+          prefixIcon: Icon(Icons.location_on, color: AppTheme.successGreen),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+        onChanged: _searchPickupLocation,
+      ),
+      if (_isPickupSearching)
+        const Padding(
+          padding: EdgeInsets.all(8),
+          child: CircularProgressIndicator(),
+        ),
+      if (_pickupSearchResults.isNotEmpty)
+        Container(
+          constraints: BoxConstraints(maxHeight: 200),
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _pickupSearchResults.length,
+            itemBuilder: (context, idx) {
+              final result = _pickupSearchResults[idx];
+              return ListTile(
+                leading: Icon(Icons.location_on, color: AppTheme.successGreen),
+                title: Text(result['display_name']),
+                onTap: () {
+                  _pickupSearchController.text = result['display_name'];
+                  _pickupLatLng = latlng2.LatLng(
+                    double.parse(result['lat']),
+                    double.parse(result['lon']),
+                  );
+                  setState(() => _pickupSearchResults = []);
+                },
+              );
+            },
+          ),
+        ),
       _sectionHeader('Delivery Details'),
-      _styledTextField(_deliveryController, 'Delivery Address *', Icons.location_on, hint: 'Enter delivery address or select on map'),
-      _mapPickerButton(_deliveryLatLng, (latlng) => setState(() => _deliveryLatLng = latlng), label: 'Delivery'),
+      TextField(
+        controller: _deliverySearchController,
+        decoration: InputDecoration(
+          labelText: 'Delivery Address *',
+          prefixIcon: Icon(Icons.location_on, color: AppTheme.successGreen),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+        onChanged: _searchDeliveryLocation,
+      ),
+      if (_isDeliverySearching)
+        const Padding(
+          padding: EdgeInsets.all(8),
+          child: CircularProgressIndicator(),
+        ),
+      if (_deliverySearchResults.isNotEmpty)
+        Container(
+          constraints: BoxConstraints(maxHeight: 200),
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _deliverySearchResults.length,
+            itemBuilder: (context, idx) {
+              final result = _deliverySearchResults[idx];
+              return ListTile(
+                leading: Icon(Icons.location_on, color: AppTheme.successGreen),
+                title: Text(result['display_name']),
+                onTap: () {
+                  _deliverySearchController.text = result['display_name'];
+                  _deliveryLatLng = latlng2.LatLng(
+                    double.parse(result['lat']),
+                    double.parse(result['lon']),
+                  );
+                  setState(() => _deliverySearchResults = []);
+                },
+              );
+            },
+          ),
+        ),
       _sectionHeader('Package Name'),
       _styledTextField(_packageNameController, 'Package Name', Icons.inventory, hint: 'e.g. Electronics Shipment'),
       _sectionHeader('Items in Package'),
@@ -253,22 +402,22 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
       _sectionHeader('Additional Description'),
       Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
-        child: TextField(
+                      child: TextField(
           controller: _packageDescriptionController,
           maxLines: 4,
           style: Theme.of(context).textTheme.bodyLarge,
-          decoration: InputDecoration(
+                        decoration: InputDecoration(
             labelText: 'Additional Instructions or Notes',
             labelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500, color: AppTheme.slate700),
             floatingLabelStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: AppTheme.slate900),
             hintText: 'Provide any extra details, instructions, or special requirements for your shipment.',
             hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w300, color: AppTheme.slate300),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            filled: true,
-            fillColor: Colors.white,
-          ),
-        ),
-      ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                      ),
+                    ),
       const SizedBox(height: 12),
       _sectionHeader('Summary'),
       _buildPackageSummary(),
@@ -381,9 +530,9 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
             IconButton(
               icon: const Icon(Icons.close, color: AppTheme.successGreen),
               onPressed: () => onChanged(null),
-            ),
-        ],
-      ),
+                    ),
+                  ],
+                ),
     );
   }
 
@@ -398,9 +547,15 @@ class _AgentRegisterShipmentPageState extends State<AgentRegisterShipmentPage> {
 
   Widget _buildPackageSummary() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
         Text('Total Value: TZS ${_getTotalValue().toStringAsFixed(2)}', style: Theme.of(context).textTheme.bodyLarge),
+        const SizedBox(height: 6),
+        // Show only the human-readable addresses for pickup and delivery
+        if (_pickupSearchController.text.isNotEmpty)
+          Text('Pickup: ${_pickupSearchController.text}', style: Theme.of(context).textTheme.bodyMedium),
+        if (_deliverySearchController.text.isNotEmpty)
+          Text('Delivery: ${_deliverySearchController.text}', style: Theme.of(context).textTheme.bodyMedium),
         const SizedBox(height: 6),
         Text('Items:', style: Theme.of(context).textTheme.bodyMedium),
         ..._packageItems.where((item) => item.nameController.text.isNotEmpty).map((item) =>
@@ -472,8 +627,8 @@ class _OpenStreetMapPickerState extends State<_OpenStreetMapPicker> {
                     point: _selected,
                     child: const Icon(Icons.location_pin, color: Colors.red, size: 40),
                   ),
-                ],
-              ),
+              ],
+            ),
             ],
           ),
         ),
